@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>VectorDatabase.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.service</a> &gt; <span class="el_source">VectorDatabase.java</span></div><h1>VectorDatabase.java</h1><pre class="source lang-java linenums">package com.secondbrain.service;
+
+import com.secondbrain.core.DocumentSource;
+import org.springframework.stereotype.Component;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+<span class="fc" id="L9">public class VectorDatabase {</span>
+<span class="fc" id="L10">    private List&lt;com.secondbrain.core.TextSegment&gt; memoryBank = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L11">    private List&lt;DocumentSource&gt; rawDocuments = new ArrayList&lt;&gt;(); // Keep raw for listing</span>
+
+    public void save(DocumentSource doc) {
+<span class="fc" id="L14">        rawDocuments.add(doc);</span>
+
+        // Chunking Strategy: Split by paragraphs or roughly 1000 chars
+<span class="fc" id="L17">        String fullText = doc.getContent();</span>
+<span class="fc" id="L18">        String[] paragraphs = fullText.split(&quot;\\n\\s*\\n&quot;); // Split by empty lines</span>
+
+<span class="fc bfc" id="L20" title="All 2 branches covered.">        for (String para : paragraphs) {</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">            if (para.trim().length() &gt; 50) { // Ignore very short lines</span>
+<span class="fc" id="L22">                memoryBank.add(new com.secondbrain.core.TextSegment(para.trim(), doc.getFilename()));</span>
+            }
+        }
+<span class="fc" id="L25">    }</span>
+
+    public String search(String query) {
+<span class="pc bpc" id="L28" title="1 of 4 branches missed.">        if (query == null || query.trim().isEmpty())</span>
+<span class="fc" id="L29">            return &quot;&quot;;</span>
+
+        // 1. Tokenize Query
+<span class="fc" id="L32">        String[] keywords = query.toLowerCase().replaceAll(&quot;[^a-zA-Z0-9\\s]&quot;, &quot;&quot;).split(&quot;\\s+&quot;);</span>
+
+        // 2. Score Chunks
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (com.secondbrain.core.TextSegment segment : memoryBank) {</span>
+<span class="fc" id="L36">            int score = 0;</span>
+<span class="fc" id="L37">            String lowerContent = segment.getContent().toLowerCase();</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            for (String word : keywords) {</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">                if (lowerContent.contains(word)) {</span>
+<span class="fc" id="L40">                    score++;</span>
+                }
+            }
+<span class="fc" id="L43">            segment.setScore(score);</span>
+<span class="fc" id="L44">        }</span>
+
+        // 3. Sort by Score
+<span class="fc" id="L47">        java.util.Collections.sort(memoryBank);</span>
+
+        // 4. Select Top N Chunks (Smart Context)
+<span class="fc" id="L50">        StringBuilder context = new StringBuilder();</span>
+<span class="fc" id="L51">        int tokenEstimate = 0;</span>
+<span class="fc" id="L52">        int maxTokens = 15000; // Safe limit for GPT-4o</span>
+
+<span class="fc" id="L54">        int count = 0;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (com.secondbrain.core.TextSegment segment : memoryBank) {</span>
+<span class="pc bpc" id="L56" title="3 of 4 branches missed.">            if (segment.getScore() &gt; 0 || count &lt; 5) { // Always include top 5 even if score 0 (fallback)</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">                if (tokenEstimate + segment.getContent().length() &gt; maxTokens)</span>
+<span class="nc" id="L58">                    break;</span>
+
+<span class="fc" id="L60">                context.append(&quot;\n--- Source: &quot;).append(segment.getFilename()).append(&quot; ---\n&quot;);</span>
+<span class="fc" id="L61">                context.append(segment.getContent()).append(&quot;\n&quot;);</span>
+
+<span class="fc" id="L63">                tokenEstimate += segment.getContent().length();</span>
+<span class="fc" id="L64">                count++;</span>
+            }
+<span class="fc" id="L66">        }</span>
+
+<span class="fc" id="L68">        System.out.println(&quot;Smart Context Selected: &quot; + count + &quot; chunks out of &quot; + memoryBank.size());</span>
+<span class="fc" id="L69">        return context.toString();</span>
+    }
+
+    public int getDocumentCount() {
+<span class="fc" id="L73">        return rawDocuments.size();</span>
+    }
+
+    public List&lt;DocumentSource&gt; getDocuments() {
+<span class="fc" id="L77">        return new ArrayList&lt;&gt;(rawDocuments);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

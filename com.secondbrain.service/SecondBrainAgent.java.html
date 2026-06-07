@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecondBrainAgent.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.service</a> &gt; <span class="el_source">SecondBrainAgent.java</span></div><h1>SecondBrainAgent.java</h1><pre class="source lang-java linenums">package com.secondbrain.service;
+
+import com.secondbrain.core.DocumentSource;
+import com.secondbrain.persistence.DocumentRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SecondBrainAgent {
+<span class="fc" id="L10">    private String name = &quot;Jarvis-Web&quot;;</span>
+
+    // Memory Banks per User
+<span class="fc" id="L13">    private java.util.Map&lt;Long, VectorDatabase&gt; userMemoryBanks = new java.util.concurrent.ConcurrentHashMap&lt;&gt;();</span>
+
+    // -&gt; KONSEP PBO: ABSTRACTION (Abstraksi). Agen kebal terhadap perubahan API! Ia memanggil antarmuka 'BrainDriver' yang kosong, bukan memanggil OpenAI secara langsung.
+    private BrainDriver brain;
+    private DocumentRepository documentRepository;
+
+    private org.springframework.context.ApplicationContext context;
+
+    @Autowired // MEMBAWA SEMUA PAKET DAN TERHUBUNG
+    public SecondBrainAgent(BrainDriver brain, DocumentRepository documentRepository,
+<span class="fc" id="L23">            org.springframework.context.ApplicationContext context) {</span>
+<span class="fc" id="L24">        this.brain = brain;</span>
+<span class="fc" id="L25">        this.documentRepository = documentRepository;</span>
+<span class="fc" id="L26">        this.context = context;</span>
+
+<span class="fc" id="L28">        loadMemoryFromDatabase();</span>
+<span class="fc" id="L29">    }</span>
+
+    private VectorDatabase getMemoryBankForUser(Long userId) {
+<span class="fc" id="L32">        return userMemoryBanks.computeIfAbsent(userId, k -&gt; context.getBean(VectorDatabase.class));</span>
+    }
+
+    private void loadMemoryFromDatabase() {
+        // -&gt; FIX: Dulu pakai findAll() yang mengambil dokumen SEMUA user.
+        //    Sekarang di-group per userId agar dokumen user A tidak bocor ke user B.
+<span class="fc" id="L38">        System.out.println(&quot;[&quot; + name + &quot;] Loading memory from database (per-user isolated)...&quot;);</span>
+<span class="fc" id="L39">        java.util.List&lt;com.secondbrain.persistence.DocumentEntity&gt; allEntities = documentRepository.findAll();</span>
+
+        // Group entitas per userId terlebih dahulu
+<span class="fc" id="L42">        java.util.Map&lt;Long, java.util.List&lt;com.secondbrain.persistence.DocumentEntity&gt;&gt; grouped =</span>
+                new java.util.HashMap&lt;&gt;();
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        for (com.secondbrain.persistence.DocumentEntity e : allEntities) {</span>
+<span class="nc" id="L45">            grouped.computeIfAbsent(e.getUserId(), k -&gt; new java.util.ArrayList&lt;&gt;()).add(e);</span>
+<span class="nc" id="L46">        }</span>
+
+        // Restore dokumen hanya ke memory bank pemiliknya
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        for (java.util.Map.Entry&lt;Long, java.util.List&lt;com.secondbrain.persistence.DocumentEntity&gt;&gt; entry : grouped.entrySet()) {</span>
+<span class="nc" id="L50">            Long userId = entry.getKey();</span>
+<span class="nc" id="L51">            VectorDatabase userMemory = getMemoryBankForUser(userId);</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">            for (com.secondbrain.persistence.DocumentEntity entity : entry.getValue()) {</span>
+                try {
+<span class="nc" id="L54">                    java.nio.file.Path filePath = java.nio.file.Paths.get(entity.getFilePath());</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                    if (java.nio.file.Files.exists(filePath)) {</span>
+<span class="nc" id="L56">                        com.secondbrain.core.PDFDocument doc = new com.secondbrain.core.PDFDocument();</span>
+<span class="nc" id="L57">                        doc.setFilePath(filePath);</span>
+<span class="nc" id="L58">                        doc.setDetails(entity.getFilename(), entity.getFilename(), userId);</span>
+<span class="nc" id="L59">                        doc.extractContent();</span>
+<span class="nc" id="L60">                        userMemory.save(doc);</span>
+<span class="nc" id="L61">                        System.out.println(&quot;[&quot; + name + &quot;] Restored for User &quot; + userId + &quot;: &quot; + entity.getFilename());</span>
+<span class="nc" id="L62">                    } else {</span>
+<span class="nc" id="L63">                        System.err.println(&quot;[&quot; + name + &quot;] File not found (skipping): &quot; + entity.getFilePath());</span>
+                    }
+<span class="nc" id="L65">                } catch (Exception e) {</span>
+<span class="nc" id="L66">                    System.err.println(&quot;[&quot; + name + &quot;] Failed to restore: &quot; + entity.getFilename());</span>
+<span class="nc" id="L67">                }</span>
+<span class="nc" id="L68">            }</span>
+<span class="nc" id="L69">        }</span>
+<span class="fc" id="L70">    }</span>
+
+    // -&gt; KONSEP PBO: POLYMORPHISM OBJECT. Parameter siap sedia menangkap wujud abstrak 'DocumentSource'. Yang nanti datang masuk bisa 'PDFDocument', 'WordDocument', dll.
+    public void learn(DocumentSource doc) {
+        // -&gt; INFO: Method ini terhubung pada 'VectorDatabase.java' untuk menyimpan teks ke RAM dan 'DocumentRepository.java' untuk menyimpan metadata ke MySQL
+        // 1. Process and Save to RAM (VectorDB)
+<span class="nc" id="L76">        doc.extractContent();</span>
+<span class="nc" id="L77">        VectorDatabase userMemory = getMemoryBankForUser(doc.getUserId());</span>
+<span class="nc" id="L78">        userMemory.save(doc);</span>
+
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (doc instanceof com.secondbrain.core.PDFDocument) {</span>
+<span class="nc" id="L81">            com.secondbrain.core.PDFDocument pdfDoc = (com.secondbrain.core.PDFDocument) doc;</span>
+
+            // Check if already exists to avoid duplicates
+<span class="nc bnc" id="L84" title="All 2 branches missed.">            if (documentRepository.findByFilename(pdfDoc.getFilename()).isEmpty()) {</span>
+<span class="nc" id="L85">                com.secondbrain.persistence.DocumentEntity entity = new com.secondbrain.persistence.DocumentEntity(</span>
+<span class="nc" id="L86">                        pdfDoc.getFilename(),</span>
+<span class="nc" id="L87">                        pdfDoc.getFilePath().toString(),</span>
+<span class="nc" id="L88">                        java.time.LocalDateTime.now(),</span>
+<span class="nc" id="L89">                        doc.getUserId());</span>
+<span class="nc" id="L90">                documentRepository.save(entity);</span>
+<span class="nc" id="L91">                System.out.println(&quot;[&quot; + name + &quot;] Saved metadata to Database for User &quot; + doc.getUserId());</span>
+            }
+        }
+
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        String preview = doc.getContent().length() &gt; 50 ? doc.getContent().substring(0, 50) : doc.getContent();</span>
+<span class="nc" id="L96">        System.out.println(&quot;[&quot; + name + &quot;] Selesai membaca data: &quot; + preview + &quot;...&quot;);</span>
+<span class="nc" id="L97">    }</span>
+
+    public String ask(String question, Long userId) {
+        // -&gt; INFO: Versi lama — search seluruh VectorDB user (tanpa filter dokumen)
+<span class="fc" id="L101">        System.out.println(name + &quot; sedang menghubungkan ke otak User &quot; + userId + &quot;...&quot;);</span>
+<span class="fc" id="L102">        VectorDatabase userMemory = getMemoryBankForUser(userId);</span>
+<span class="fc" id="L103">        String context = userMemory.search(question);</span>
+<span class="fc" id="L104">        String response = brain.think(context, question);</span>
+<span class="fc" id="L105">        System.out.println(&quot;Jawaban: &quot; + response);</span>
+<span class="fc" id="L106">        return response;</span>
+    }
+
+    /**
+     * Versi baru: hanya gunakan dokumen yang ada di assignedDocIds sebagai konteks RAG.
+     * Jika assignedDocIds kosong, fallback ke seluruh VectorDB user (perilaku lama).
+     */
+    public String askWithContext(String question, Long userId, java.util.List&lt;Long&gt; assignedDocIds) {
+<span class="nc" id="L114">        System.out.println(name + &quot; [context-aware] User=&quot; + userId + &quot; docs=&quot; + assignedDocIds);</span>
+<span class="nc" id="L115">        VectorDatabase userMemory = getMemoryBankForUser(userId);</span>
+
+        String context;
+<span class="nc bnc" id="L118" title="All 4 branches missed.">        if (assignedDocIds == null || assignedDocIds.isEmpty()) {</span>
+            // Tidak ada doc yang di-assign — pakai semua konteks milik user
+<span class="nc" id="L120">            context = userMemory.search(question);</span>
+        } else {
+            // Ambil langsung dari DB berdasarkan ID (mengakomodasi dokumen grup dari user lain)
+<span class="nc" id="L123">            java.util.List&lt;com.secondbrain.persistence.DocumentEntity&gt; docs = documentRepository.findAllById(assignedDocIds);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (docs.isEmpty()) {</span>
+<span class="nc" id="L125">                context = userMemory.search(question);</span>
+            } else {
+<span class="nc" id="L127">                VectorDatabase miniMemory = this.context.getBean(VectorDatabase.class);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                for (com.secondbrain.persistence.DocumentEntity entity : docs) {</span>
+                    try {
+<span class="nc" id="L130">                        java.nio.file.Path filePath = java.nio.file.Paths.get(entity.getFilePath());</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">                        if (java.nio.file.Files.exists(filePath)) {</span>
+<span class="nc" id="L132">                            com.secondbrain.core.PDFDocument doc = new com.secondbrain.core.PDFDocument();</span>
+<span class="nc" id="L133">                            doc.setFilePath(filePath);</span>
+<span class="nc" id="L134">                            doc.setDetails(entity.getFilename(), entity.getFilename(), entity.getUserId());</span>
+<span class="nc" id="L135">                            doc.extractContent();</span>
+<span class="nc" id="L136">                            miniMemory.save(doc);</span>
+                        }
+<span class="nc" id="L138">                    } catch (Exception e) {</span>
+<span class="nc" id="L139">                        System.err.println(&quot;[&quot; + name + &quot;] Failed to load assigned doc context: &quot; + entity.getFilename());</span>
+<span class="nc" id="L140">                    }</span>
+<span class="nc" id="L141">                }</span>
+<span class="nc" id="L142">                context = miniMemory.search(question);</span>
+            }
+        }
+
+<span class="nc" id="L146">        String response = brain.think(context, question);</span>
+<span class="nc" id="L147">        System.out.println(&quot;[context-aware] Jawaban: &quot; + response);</span>
+<span class="nc" id="L148">        return response;</span>
+    }
+
+    public int getMemorySize(Long userId) {
+<span class="nc" id="L152">        return getMemoryBankForUser(userId).getDocumentCount();</span>
+    }
+
+    public java.util.List&lt;DocumentSource&gt; getDocuments(Long userId) {
+<span class="nc" id="L156">        return getMemoryBankForUser(userId).getDocuments();</span>
+    }
+
+    /** Kembalikan DocumentEntity dari DB untuk ditampilkan di Document Panel (dengan ID). */
+    public java.util.List&lt;com.secondbrain.persistence.DocumentEntity&gt; getDocumentEntities(Long userId) {
+<span class="nc" id="L161">        return documentRepository.findAllByUserId(userId);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
