@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.controller</a> &gt; <span class="el_source">AdminController.java</span></div><h1>AdminController.java</h1><pre class="source lang-java linenums">package com.secondbrain.controller;
+
+import com.secondbrain.persistence.UserEntity;
+import com.secondbrain.service.UserService;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
+
+@Controller
+public class AdminController {
+
+    private final UserService userService;
+
+    @Autowired
+<span class="fc" id="L22">    public AdminController(UserService userService) {</span>
+<span class="fc" id="L23">        this.userService = userService;</span>
+<span class="fc" id="L24">    }</span>
+
+    private boolean isAdmin(HttpSession session) {
+<span class="fc" id="L27">        UserEntity user = (UserEntity) session.getAttribute(&quot;loggedInUser&quot;);</span>
+<span class="fc bfc" id="L28" title="All 4 branches covered.">        return user != null &amp;&amp; &quot;ADMIN&quot;.equalsIgnoreCase(user.getRole());</span>
+    }
+
+    @GetMapping(&quot;/admin&quot;)
+    public String adminDashboard(Model model, HttpSession session) {
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (!isAdmin(session)) {</span>
+<span class="fc" id="L34">            return &quot;redirect:/&quot;;</span>
+        }
+
+<span class="fc" id="L37">        List&lt;UserEntity&gt; allUsers = userService.findAllUsers();</span>
+        
+<span class="fc" id="L39">        long totalTokens = allUsers.stream().mapToLong(UserEntity::getTokens).sum();</span>
+<span class="fc" id="L40">        long proUsers = allUsers.stream().filter(u -&gt; &quot;PRO&quot;.equalsIgnoreCase(u.getSubscriptionTier())).count();</span>
+
+<span class="fc" id="L42">        model.addAttribute(&quot;users&quot;, allUsers);</span>
+<span class="fc" id="L43">        model.addAttribute(&quot;totalUsers&quot;, allUsers.size());</span>
+<span class="fc" id="L44">        model.addAttribute(&quot;totalTokens&quot;, totalTokens);</span>
+<span class="fc" id="L45">        model.addAttribute(&quot;proUsers&quot;, proUsers);</span>
+<span class="fc" id="L46">        model.addAttribute(&quot;title&quot;, &quot;Admin Dashboard&quot;);</span>
+
+<span class="fc" id="L48">        return &quot;admin-dashboard&quot;;</span>
+    }
+
+    @PostMapping(&quot;/admin/add-tokens&quot;)
+    public String addTokens(@RequestParam(&quot;userId&quot;) Long userId, 
+                            @RequestParam(&quot;tokenAmount&quot;) int tokenAmount, 
+                            HttpSession session, 
+                            RedirectAttributes redirectAttributes) {
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">        if (!isAdmin(session)) {</span>
+<span class="fc" id="L57">            return &quot;redirect:/&quot;;</span>
+        }
+
+<span class="fc" id="L60">        userService.findById(userId).ifPresent(user -&gt; {</span>
+<span class="fc" id="L61">            user.setTokens(user.getTokens() + tokenAmount);</span>
+<span class="fc" id="L62">            userService.upgradeSubscription(user, user.getSubscriptionTier(), tokenAmount); // Wait, upgradeSubscription directly adds, so I just use setTokens and save it manually, but upgradeSubscription saves it. Let's just use it with proper math. Wait, upgradeSubscription adds tokens to current. So:</span>
+            // Actually `userService.upgradeSubscription` adds `addedTokens` to current tokens.
+<span class="fc" id="L64">        });</span>
+        
+        // Simpler way:
+<span class="fc" id="L67">        userService.findById(userId).ifPresent(user -&gt; {</span>
+<span class="fc" id="L68">            userService.upgradeSubscription(user, user.getSubscriptionTier(), tokenAmount);</span>
+<span class="fc" id="L69">            redirectAttributes.addFlashAttribute(&quot;message&quot;, &quot;Added &quot; + tokenAmount + &quot; tokens to &quot; + user.getUsername());</span>
+<span class="fc" id="L70">        });</span>
+
+<span class="fc" id="L72">        return &quot;redirect:/admin&quot;;</span>
+    }
+    
+    @PostMapping(&quot;/admin/upgrade-pro&quot;)
+    public String upgradePro(@RequestParam(&quot;userId&quot;) Long userId, 
+                             HttpSession session, 
+                             RedirectAttributes redirectAttributes) {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (!isAdmin(session)) {</span>
+<span class="fc" id="L80">            return &quot;redirect:/&quot;;</span>
+        }
+
+<span class="fc" id="L83">        userService.findById(userId).ifPresent(user -&gt; {</span>
+<span class="fc" id="L84">            userService.upgradeSubscription(user, &quot;PRO&quot;, 1000);</span>
+<span class="fc" id="L85">            redirectAttributes.addFlashAttribute(&quot;message&quot;, user.getUsername() + &quot; has been upgraded to PRO.&quot;);</span>
+<span class="fc" id="L86">        });</span>
+
+<span class="fc" id="L88">        return &quot;redirect:/admin&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

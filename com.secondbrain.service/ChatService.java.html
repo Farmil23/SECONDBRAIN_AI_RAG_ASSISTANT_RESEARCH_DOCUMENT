@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChatService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.service</a> &gt; <span class="el_source">ChatService.java</span></div><h1>ChatService.java</h1><pre class="source lang-java linenums">package com.secondbrain.service;
+
+import com.secondbrain.persistence.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+<span class="fc" id="L11">public class ChatService {</span>
+
+    @Autowired
+    private ChatSessionRepository sessionRepository;
+
+    @Autowired
+    private ChatMessageRepository messageRepository;
+
+    @Autowired
+    private SecondBrainAgent agent;
+    
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private DocumentRepository documentRepository;
+
+    public ChatSessionEntity createSession(String title, boolean isGroup, UserEntity owner) {
+<span class="fc" id="L29">        ChatSessionEntity session = new ChatSessionEntity(title, isGroup, owner);</span>
+<span class="fc" id="L30">        return sessionRepository.save(session);</span>
+    }
+
+    public List&lt;ChatSessionEntity&gt; getUserSessions(UserEntity user) {
+<span class="fc" id="L34">        return sessionRepository.findSessionsForUser(user.getId(), user);</span>
+    }
+    
+    public Optional&lt;ChatSessionEntity&gt; getSession(Long sessionId) {
+<span class="fc" id="L38">        return sessionRepository.findById(sessionId);</span>
+    }
+
+    public void renameSession(Long sessionId, String newTitle) {
+<span class="fc" id="L42">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L43">            session.setTitle(newTitle);</span>
+<span class="fc" id="L44">            sessionRepository.save(session);</span>
+<span class="fc" id="L45">        });</span>
+<span class="fc" id="L46">    }</span>
+
+    public void deleteSession(Long sessionId) {
+<span class="fc" id="L49">        sessionRepository.deleteById(sessionId);</span>
+<span class="fc" id="L50">    }</span>
+
+    public void joinGroup(Long sessionId, UserEntity user) {
+<span class="fc" id="L53">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="nc bnc" id="L54" title="All 6 branches missed.">            if (session.isGroupChat() &amp;&amp; !session.getParticipants().contains(user) &amp;&amp; !session.getOwner().getId().equals(user.getId())) {</span>
+<span class="fc" id="L55">                session.getParticipants().add(user);</span>
+<span class="fc" id="L56">                sessionRepository.save(session);</span>
+            }
+<span class="fc" id="L58">        });</span>
+<span class="fc" id="L59">    }</span>
+
+    public void sendMessage(Long sessionId, UserEntity sender, String content) {
+<span class="fc" id="L62">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L63">            ChatMessageEntity msg = new ChatMessageEntity(session, sender.getUsername(), content);</span>
+<span class="fc" id="L64">            messageRepository.save(msg);</span>
+
+            // Periksa keberadaan keyword AI khusus &quot;@badsfarmil&quot;
+<span class="fc" id="L67">            String lowerContent = content.toLowerCase();</span>
+<span class="pc bpc" id="L68" title="1 of 4 branches missed.">            if (lowerContent.contains(&quot;@badsfarmil&quot;) || lowerContent.contains(&quot;@ badsfarmil&quot;)) {</span>
+                // potong prefix @badsfarmil untuk mendapat pertanyaan aslinya
+<span class="fc" id="L70">                String promptText = content.replaceAll(&quot;(?i)@\\s*badsfarmil&quot;, &quot;&quot;).trim();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                if(promptText.isEmpty()) promptText = &quot;Hello!&quot;;</span>
+                
+                // Pastikan user masih punya token, lalu kurangi
+<span class="fc bfc" id="L74" title="All 2 branches covered.">                if (userService.deductToken(sender)) {</span>
+                    try {
+<span class="fc" id="L76">                        String answer = agent.askWithContext(promptText, sender.getId(), session.getAssignedDocumentIds());</span>
+<span class="fc" id="L77">                        ChatMessageEntity aiMsg = new ChatMessageEntity(session, &quot;Jarvis&quot;, answer);</span>
+<span class="fc" id="L78">                        messageRepository.save(aiMsg);</span>
+<span class="fc" id="L79">                    } catch(Exception e) {</span>
+<span class="fc" id="L80">                        ChatMessageEntity errorMsg = new ChatMessageEntity(session, &quot;System&quot;, &quot;Error AI: &quot; + e.getMessage());</span>
+<span class="fc" id="L81">                        messageRepository.save(errorMsg);</span>
+<span class="fc" id="L82">                    }</span>
+                } else {
+<span class="fc" id="L84">                    ChatMessageEntity aiMsg = new ChatMessageEntity(session, &quot;System&quot;, &quot;Saldo token &quot; + sender.getUsername() + &quot; habis! Silahkan upgrade.&quot;);</span>
+<span class="fc" id="L85">                    messageRepository.save(aiMsg);</span>
+                }
+            }
+<span class="fc" id="L88">        });</span>
+<span class="fc" id="L89">    }</span>
+
+    public List&lt;ChatMessageEntity&gt; getMessages(Long sessionId) {
+<span class="fc" id="L92">        return messageRepository.findByChatSessionIdOrderByCreatedAtAsc(sessionId);</span>
+    }
+
+    public void saveChatMessage(Long sessionId, String senderName, String content) {
+        // -&gt; [INFO] Menyimpan pesan chat ke database MySQL secara manual
+<span class="fc" id="L97">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L98">            ChatMessageEntity msg = new ChatMessageEntity(session, senderName, content);</span>
+<span class="fc" id="L99">            messageRepository.save(msg);</span>
+<span class="fc" id="L100">        });</span>
+<span class="fc" id="L101">    }</span>
+
+    /** Assign sebuah dokumen ke chat session sebagai konteks AI. */
+    public void assignDocumentToSession(Long sessionId, Long docId) {
+<span class="fc" id="L105">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L106">            session.addAssignedDocumentId(docId);</span>
+<span class="fc" id="L107">            sessionRepository.save(session);</span>
+<span class="fc" id="L108">        });</span>
+<span class="fc" id="L109">    }</span>
+
+    /** Hapus assignment dokumen dari chat session. */
+    public void removeDocumentFromSession(Long sessionId, Long docId) {
+<span class="fc" id="L113">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L114">            session.removeAssignedDocumentId(docId);</span>
+<span class="fc" id="L115">            sessionRepository.save(session);</span>
+<span class="fc" id="L116">        });</span>
+<span class="fc" id="L117">    }</span>
+
+    /** Ambil list ID dokumen yang di-assign ke session ini. */
+    public List&lt;Long&gt; getAssignedDocumentIds(Long sessionId) {
+<span class="fc" id="L121">        return sessionRepository.findById(sessionId)</span>
+<span class="fc" id="L122">                .map(ChatSessionEntity::getAssignedDocumentIds)</span>
+<span class="fc" id="L123">                .orElse(new java.util.ArrayList&lt;&gt;());</span>
+    }
+
+    /** Ambil list map info dokumen lengkap dengan nama uploader. */
+    public List&lt;java.util.Map&lt;String, Object&gt;&gt; getAssignedDocumentsWithUploader(Long sessionId, Long currentUserId) {
+<span class="fc" id="L128">        List&lt;java.util.Map&lt;String, Object&gt;&gt; result = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc" id="L129">        sessionRepository.findById(sessionId).ifPresent(session -&gt; {</span>
+<span class="fc" id="L130">            List&lt;Long&gt; assignedIds = session.getAssignedDocumentIds();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            if (!assignedIds.isEmpty()) {</span>
+<span class="fc" id="L132">                List&lt;DocumentEntity&gt; docs = documentRepository.findAllById(assignedIds);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">                for (DocumentEntity doc : docs) {</span>
+<span class="fc" id="L134">                    java.util.Map&lt;String, Object&gt; map = new java.util.HashMap&lt;&gt;();</span>
+<span class="fc" id="L135">                    map.put(&quot;id&quot;, doc.getId());</span>
+<span class="fc" id="L136">                    map.put(&quot;filename&quot;, doc.getFilename());</span>
+<span class="fc" id="L137">                    map.put(&quot;isOwner&quot;, doc.getUserId().equals(currentUserId));</span>
+                    
+<span class="fc" id="L139">                    String uploaderName = userService.findById(doc.getUserId())</span>
+<span class="fc" id="L140">                            .map(UserEntity::getUsername)</span>
+<span class="fc" id="L141">                            .orElse(&quot;Unknown&quot;);</span>
+<span class="fc" id="L142">                    map.put(&quot;uploaderName&quot;, uploaderName);</span>
+                    
+<span class="fc" id="L144">                    result.add(map);</span>
+<span class="fc" id="L145">                }</span>
+            }
+<span class="fc" id="L147">        });</span>
+<span class="fc" id="L148">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

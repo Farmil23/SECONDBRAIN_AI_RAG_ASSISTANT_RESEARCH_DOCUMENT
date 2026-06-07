@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AdminFXController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.controller</a> &gt; <span class="el_source">AdminFXController.java</span></div><h1>AdminFXController.java</h1><pre class="source lang-java linenums">package com.secondbrain.controller;
+
+import com.secondbrain.persistence.*;
+import com.secondbrain.service.ChatService;
+import com.secondbrain.service.SecondBrainAgent;
+import com.secondbrain.service.UserService;
+import javafx.application.Platform;
+import javafx.beans.property.*;
+import javafx.collections.*;
+import javafx.collections.transformation.FilteredList;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+
+@Component
+<span class="fc" id="L26">public class AdminFXController {</span>
+
+    @Autowired private UserService userService;
+    @Autowired private ChatService chatService;
+    @Autowired private SecondBrainAgent agent;
+    @Autowired private ChatSessionRepository chatSessionRepository;
+    @Autowired private DocumentRepository documentRepository;
+    @Autowired private ChatMessageRepository messageRepository;
+
+    // ── Stat Labels ───────────────────────────────────────────────────
+    @FXML private Label lblTotalUsers;
+    @FXML private Label lblProUsers;
+    @FXML private Label lblFreeUsers;
+    @FXML private Label lblTotalTokens;
+    @FXML private Label lblRevenue;
+    @FXML private Label lblTotalChats;
+    @FXML private Label lblGroupChats;
+    @FXML private Label lblTotalDocs;
+    @FXML private Label lblLastRefresh;
+    @FXML private Label lblTableStatus;
+
+    // ── Tab 1: Users ──────────────────────────────────────────────────
+    @FXML private TableView&lt;UserEntity&gt; userTable;
+    @FXML private TableColumn&lt;UserEntity, Long&gt;    colId;
+    @FXML private TableColumn&lt;UserEntity, String&gt;  colUsername;
+    @FXML private TableColumn&lt;UserEntity, String&gt;  colRole;
+    @FXML private TableColumn&lt;UserEntity, String&gt;  colTier;
+    @FXML private TableColumn&lt;UserEntity, Integer&gt; colTokens;
+    @FXML private TableColumn&lt;UserEntity, Integer&gt; colDocs;
+    @FXML private TableColumn&lt;UserEntity, Integer&gt; colChats;
+    @FXML private TableColumn&lt;UserEntity, String&gt;  colStatus;
+    @FXML private TextField searchField;
+    @FXML private ComboBox&lt;String&gt; tierFilter;
+
+    private ObservableList&lt;UserEntity&gt; allUsers;
+    private FilteredList&lt;UserEntity&gt; filteredUsers;
+
+    // ── Tab 2: Chat Sessions ──────────────────────────────────────────
+    @FXML private TableView&lt;ChatSessionEntity&gt; chatTable;
+    @FXML private TableColumn&lt;ChatSessionEntity, Long&gt;    colChatId;
+    @FXML private TableColumn&lt;ChatSessionEntity, String&gt;  colChatTitle;
+    @FXML private TableColumn&lt;ChatSessionEntity, String&gt;  colChatOwner;
+    @FXML private TableColumn&lt;ChatSessionEntity, String&gt;  colChatType;
+    @FXML private TableColumn&lt;ChatSessionEntity, Integer&gt; colChatDocs;
+    @FXML private TableColumn&lt;ChatSessionEntity, Integer&gt; colChatMembers;
+    @FXML private TableColumn&lt;ChatSessionEntity, Integer&gt; colChatMsgCount;
+    @FXML private ComboBox&lt;String&gt; chatTypeFilter;
+
+    // ── Tab 3: Documents ──────────────────────────────────────────────
+    @FXML private TableView&lt;DocumentEntity&gt; docTable;
+    @FXML private TableColumn&lt;DocumentEntity, Long&gt;   colDocId;
+    @FXML private TableColumn&lt;DocumentEntity, String&gt; colDocFilename;
+    @FXML private TableColumn&lt;DocumentEntity, String&gt; colDocOwner;
+    @FXML private TableColumn&lt;DocumentEntity, String&gt; colDocUploaded;
+    @FXML private TableColumn&lt;DocumentEntity, String&gt; colDocStatus;
+
+    // ── Tab 4: Log ────────────────────────────────────────────────────
+    @FXML private TextArea systemLogArea;
+
+<span class="fc" id="L85">    private final StringBuilder logBuffer = new StringBuilder();</span>
+<span class="fc" id="L86">    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern(&quot;HH:mm:ss&quot;);</span>
+
+    // ═════════════════════════════════════════════════════════════════
+    // INITIALIZE
+    // ═════════════════════════════════════════════════════════════════
+    @FXML
+    public void initialize() {
+<span class="fc" id="L93">        setupUserTable();</span>
+<span class="fc" id="L94">        setupChatTable();</span>
+<span class="fc" id="L95">        setupDocTable();</span>
+<span class="fc" id="L96">        setupFilters();</span>
+<span class="fc" id="L97">        loadAll();</span>
+<span class="fc" id="L98">        log(&quot;🚀 Admin Control Center initialized.&quot;);</span>
+<span class="fc" id="L99">    }</span>
+
+    private void setupUserTable() {
+<span class="fc" id="L102">        colId.setCellValueFactory(c -&gt; new SimpleLongProperty(c.getValue().getId()).asObject());</span>
+<span class="fc" id="L103">        colUsername.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getUsername()));</span>
+<span class="fc" id="L104">        colRole.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getRole()));</span>
+<span class="fc" id="L105">        colTier.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getSubscriptionTier()));</span>
+<span class="fc" id="L106">        colTokens.setCellValueFactory(c -&gt; new SimpleIntegerProperty(c.getValue().getTokens()).asObject());</span>
+
+<span class="fc" id="L108">        colDocs.setCellValueFactory(c -&gt; {</span>
+<span class="fc" id="L109">            int count = documentRepository.findAllByUserId(c.getValue().getId()).size();</span>
+<span class="fc" id="L110">            return new SimpleIntegerProperty(count).asObject();</span>
+        });
+<span class="fc" id="L112">        colChats.setCellValueFactory(c -&gt; {</span>
+<span class="fc" id="L113">            int count = (int) chatSessionRepository.findAll().stream()</span>
+<span class="fc" id="L114">                    .filter(s -&gt; s.getOwner().getId().equals(c.getValue().getId())).count();</span>
+<span class="fc" id="L115">            return new SimpleIntegerProperty(count).asObject();</span>
+        });
+<span class="fc" id="L117">        colStatus.setCellValueFactory(c -&gt; {</span>
+<span class="fc" id="L118">            int tokens = c.getValue().getTokens();</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">            return new SimpleStringProperty(tokens == 0 ? &quot;⚠ No Tokens&quot; : tokens &lt; 5 ? &quot;🟡 Low&quot; : &quot;🟢 Active&quot;);</span>
+        });
+
+        // Color-code Tier column
+<span class="fc" id="L123">        colTier.setCellFactory(col -&gt; new TableCell&lt;&gt;() {</span>
+            @Override protected void updateItem(String tier, boolean empty) {
+<span class="fc" id="L125">                super.updateItem(tier, empty);</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">                if (empty || tier == null) { setText(null); setStyle(&quot;&quot;); return; }</span>
+<span class="fc" id="L127">                setText(tier);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (tier.contains(&quot;PRO&quot;)) setStyle(&quot;-fx-text-fill: #3b82f6; -fx-font-weight: bold;&quot;);</span>
+<span class="fc" id="L129">                else setStyle(&quot;-fx-text-fill: #64748b;&quot;);</span>
+<span class="fc" id="L130">            }</span>
+        });
+
+        // Color-code Status column
+<span class="fc" id="L134">        colStatus.setCellFactory(col -&gt; new TableCell&lt;&gt;() {</span>
+            @Override protected void updateItem(String s, boolean empty) {
+<span class="fc" id="L136">                super.updateItem(s, empty);</span>
+<span class="nc bnc" id="L137" title="All 4 branches missed.">                if (empty || s == null) { setText(null); setStyle(&quot;&quot;); return; }</span>
+<span class="fc" id="L138">                setText(s);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">                if (s.contains(&quot;No Tokens&quot;)) setStyle(&quot;-fx-text-fill: #ef4444;&quot;);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                else if (s.contains(&quot;Low&quot;)) setStyle(&quot;-fx-text-fill: #f59e0b;&quot;);</span>
+<span class="fc" id="L141">                else setStyle(&quot;-fx-text-fill: #10b981;&quot;);</span>
+<span class="fc" id="L142">            }</span>
+        });
+
+<span class="fc" id="L145">        userTable.getSelectionModel().selectedItemProperty().addListener((obs, old, sel) -&gt; {</span>
+<span class="nc bnc" id="L146" title="All 4 branches missed.">            if (sel != null &amp;&amp; lblTableStatus != null)</span>
+<span class="fc" id="L147">                lblTableStatus.setText(&quot;Selected: &quot; + sel.getUsername() + &quot; | Tier: &quot; + sel.getSubscriptionTier() + &quot; | &quot; + sel.getTokens() + &quot; tokens&quot;);</span>
+<span class="fc" id="L148">        });</span>
+<span class="fc" id="L149">    }</span>
+
+    private void setupChatTable() {
+<span class="fc" id="L152">        colChatId.setCellValueFactory(c -&gt; new SimpleLongProperty(c.getValue().getId()).asObject());</span>
+<span class="fc" id="L153">        colChatTitle.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getTitle()));</span>
+<span class="fc" id="L154">        colChatOwner.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getOwner().getUsername()));</span>
+<span class="pc bnc" id="L155" title="All 2 branches missed.">        colChatType.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().isGroupChat() ? &quot;👥 Group&quot; : &quot;💬 Personal&quot;));</span>
+<span class="fc" id="L156">        colChatDocs.setCellValueFactory(c -&gt; new SimpleIntegerProperty(c.getValue().getAssignedDocumentIds().size()).asObject());</span>
+<span class="fc" id="L157">        colChatMembers.setCellValueFactory(c -&gt; new SimpleIntegerProperty(</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                c.getValue().isGroupChat() ? c.getValue().getParticipants().size() + 1 : 1).asObject());</span>
+<span class="fc" id="L159">        colChatMsgCount.setCellValueFactory(c -&gt; new SimpleIntegerProperty(</span>
+<span class="fc" id="L160">                messageRepository.findByChatSessionIdOrderByCreatedAtAsc(c.getValue().getId()).size()).asObject());</span>
+
+<span class="fc" id="L162">        colChatType.setCellFactory(col -&gt; new TableCell&lt;&gt;() {</span>
+            @Override protected void updateItem(String t, boolean empty) {
+<span class="fc" id="L164">                super.updateItem(t, empty);</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">                if (empty || t == null) { setText(null); setStyle(&quot;&quot;); return; }</span>
+<span class="fc" id="L166">                setText(t);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                setStyle(t.contains(&quot;Group&quot;) ? &quot;-fx-text-fill: #10b981;&quot; : &quot;-fx-text-fill: #3b82f6;&quot;);</span>
+<span class="fc" id="L168">            }</span>
+        });
+<span class="fc" id="L170">    }</span>
+
+    private void setupDocTable() {
+<span class="fc" id="L173">        colDocId.setCellValueFactory(c -&gt; new SimpleLongProperty(c.getValue().getId()).asObject());</span>
+<span class="fc" id="L174">        colDocFilename.setCellValueFactory(c -&gt; new SimpleStringProperty(c.getValue().getFilename()));</span>
+<span class="fc" id="L175">        colDocOwner.setCellValueFactory(c -&gt; {</span>
+<span class="fc" id="L176">            String owner = userService.findById(c.getValue().getUserId())</span>
+<span class="fc" id="L177">                    .map(UserEntity::getUsername).orElse(&quot;Unknown&quot;);</span>
+<span class="fc" id="L178">            return new SimpleStringProperty(owner);</span>
+        });
+<span class="fc" id="L180">        colDocUploaded.setCellValueFactory(c -&gt; {</span>
+<span class="fc" id="L181">            LocalDateTime t = c.getValue().getUploadTime();</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            return new SimpleStringProperty(t != null ? t.format(DateTimeFormatter.ofPattern(&quot;dd MMM yyyy HH:mm&quot;)) : &quot;—&quot;);</span>
+        });
+<span class="fc" id="L184">        colDocStatus.setCellValueFactory(c -&gt; {</span>
+<span class="nc bnc" id="L185" title="All 4 branches missed.">            boolean exists = c.getValue().getFilePath() != null &amp;&amp; Files.exists(Paths.get(c.getValue().getFilePath()));</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">            return new SimpleStringProperty(exists ? &quot;✅ OK&quot; : &quot;❌ Missing&quot;);</span>
+        });
+
+<span class="fc" id="L189">        colDocStatus.setCellFactory(col -&gt; new TableCell&lt;&gt;() {</span>
+            @Override protected void updateItem(String s, boolean empty) {
+<span class="fc" id="L191">                super.updateItem(s, empty);</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">                if (empty || s == null) { setText(null); setStyle(&quot;&quot;); return; }</span>
+<span class="fc" id="L193">                setText(s);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">                setStyle(s.contains(&quot;OK&quot;) ? &quot;-fx-text-fill: #10b981;&quot; : &quot;-fx-text-fill: #ef4444;&quot;);</span>
+<span class="fc" id="L195">            }</span>
+        });
+<span class="fc" id="L197">    }</span>
+
+    private void setupFilters() {
+<span class="fc" id="L200">        tierFilter.setItems(FXCollections.observableArrayList(&quot;All Tiers&quot;,&quot;FREE&quot;,&quot;PRO&quot;,&quot;PRO-ANNUAL&quot;));</span>
+<span class="fc" id="L201">        chatTypeFilter.setItems(FXCollections.observableArrayList(&quot;All Types&quot;,&quot;Personal&quot;,&quot;Group&quot;));</span>
+<span class="fc" id="L202">    }</span>
+
+    // ═════════════════════════════════════════════════════════════════
+    // LOAD DATA
+    // ═════════════════════════════════════════════════════════════════
+    private void loadAll() {
+<span class="fc" id="L208">        loadUsers();</span>
+<span class="fc" id="L209">        loadChatSessions();</span>
+<span class="fc" id="L210">        loadDocuments();</span>
+<span class="fc" id="L211">        updateStats();</span>
+<span class="fc" id="L212">        lblLastRefresh.setText(&quot;Last refresh: &quot; + LocalDateTime.now().format(FMT));</span>
+<span class="fc" id="L213">    }</span>
+
+    private void loadUsers() {
+<span class="fc" id="L216">        List&lt;UserEntity&gt; users = userService.findAllUsers();</span>
+<span class="fc" id="L217">        allUsers = FXCollections.observableArrayList(users);</span>
+<span class="fc" id="L218">        filteredUsers = new FilteredList&lt;&gt;(allUsers, u -&gt; true);</span>
+<span class="fc" id="L219">        userTable.setItems(filteredUsers);</span>
+<span class="fc" id="L220">    }</span>
+
+    private void loadChatSessions() {
+<span class="fc" id="L223">        List&lt;ChatSessionEntity&gt; sessions = chatSessionRepository.findAll();</span>
+<span class="fc" id="L224">        chatTable.setItems(FXCollections.observableArrayList(sessions));</span>
+<span class="fc" id="L225">    }</span>
+
+    private void loadDocuments() {
+<span class="fc" id="L228">        List&lt;DocumentEntity&gt; docs = documentRepository.findAll();</span>
+<span class="fc" id="L229">        docTable.setItems(FXCollections.observableArrayList(docs));</span>
+<span class="fc" id="L230">    }</span>
+
+    private void updateStats() {
+<span class="fc" id="L233">        List&lt;UserEntity&gt; users = userService.findAllUsers();</span>
+<span class="pc bnc" id="L234" title="All 4 branches missed.">        long pro = users.stream().filter(u -&gt; u.getSubscriptionTier() != null &amp;&amp; u.getSubscriptionTier().toUpperCase().contains(&quot;PRO&quot;)).count();</span>
+<span class="fc" id="L235">        long free = users.size() - pro;</span>
+<span class="fc" id="L236">        long totalTokens = users.stream().mapToLong(UserEntity::getTokens).sum();</span>
+
+<span class="fc" id="L238">        List&lt;ChatSessionEntity&gt; sessions = chatSessionRepository.findAll();</span>
+<span class="fc" id="L239">        long groups = sessions.stream().filter(ChatSessionEntity::isGroupChat).count();</span>
+
+<span class="fc" id="L241">        long totalDocs = documentRepository.count();</span>
+
+<span class="fc" id="L243">        long revenue = 0;</span>
+<span class="pc bpc" id="L244" title="1 of 2 branches missed.">        for (UserEntity u : users) {</span>
+<span class="nc bnc" id="L245" title="All 4 branches missed.">            if (u.getSubscriptionTier() != null &amp;&amp; u.getSubscriptionTier().toUpperCase().contains(&quot;PRO&quot;)) {</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">                revenue += &quot;PRO-ANNUAL&quot;.equalsIgnoreCase(u.getSubscriptionTier()) ? 1500000L : 150000L;</span>
+            }
+<span class="fc" id="L248">        }</span>
+<span class="fc" id="L249">        java.text.NumberFormat nf = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale(&quot;id&quot;,&quot;ID&quot;));</span>
+
+<span class="fc" id="L251">        lblTotalUsers.setText(String.valueOf(users.size()));</span>
+<span class="fc" id="L252">        lblProUsers.setText(String.valueOf(pro));</span>
+<span class="fc" id="L253">        lblFreeUsers.setText(free + &quot; FREE&quot;);</span>
+<span class="fc" id="L254">        lblTotalTokens.setText(String.valueOf(totalTokens));</span>
+<span class="fc" id="L255">        lblRevenue.setText(nf.format(revenue));</span>
+<span class="fc" id="L256">        lblTotalChats.setText(String.valueOf(sessions.size()));</span>
+<span class="fc" id="L257">        lblGroupChats.setText(groups + &quot; groups&quot;);</span>
+<span class="fc" id="L258">        lblTotalDocs.setText(String.valueOf(totalDocs));</span>
+<span class="fc" id="L259">    }</span>
+
+    // ═════════════════════════════════════════════════════════════════
+    // HANDLERS
+    // ═════════════════════════════════════════════════════════════════
+    @FXML public void handleRefresh() {
+<span class="fc" id="L265">        loadAll();</span>
+<span class="fc" id="L266">        log(&quot;🔄 Data refreshed.&quot;);</span>
+<span class="fc" id="L267">    }</span>
+
+    // ── User Tab ──────────────────────────────────────────────────────
+    @FXML public void handleSearch() {
+<span class="fc" id="L271">        String query = searchField.getText().toLowerCase().trim();</span>
+<span class="fc" id="L272">        String tier = tierFilter.getValue();</span>
+<span class="fc" id="L273">        filteredUsers.setPredicate(u -&gt; {</span>
+<span class="nc bnc" id="L274" title="All 4 branches missed.">            boolean nameMatch = query.isEmpty() || u.getUsername().toLowerCase().contains(query);</span>
+<span class="nc bnc" id="L275" title="All 6 branches missed.">            boolean tierMatch = tier == null || tier.equals(&quot;All Tiers&quot;) || u.getSubscriptionTier().equalsIgnoreCase(tier);</span>
+<span class="nc bnc" id="L276" title="All 4 branches missed.">            return nameMatch &amp;&amp; tierMatch;</span>
+        });
+<span class="fc" id="L278">    }</span>
+
+<span class="fc" id="L280">    @FXML public void handleTierFilter() { handleSearch(); }</span>
+
+    @FXML public void handleAddToken() {
+<span class="fc" id="L283">        UserEntity selected = userTable.getSelectionModel().getSelectedItem();</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">        if (selected == null) { showInfo(&quot;Select a user first.&quot;); return; }</span>
+
+<span class="fc" id="L286">        TextInputDialog d = new TextInputDialog(&quot;100&quot;);</span>
+<span class="fc" id="L287">        d.setTitle(&quot;Add Tokens&quot;); d.setHeaderText(&quot;Add tokens to: &quot; + selected.getUsername());</span>
+<span class="fc" id="L288">        d.setContentText(&quot;Amount:&quot;);</span>
+<span class="fc" id="L289">        d.showAndWait().ifPresent(val -&gt; {</span>
+            try {
+<span class="fc" id="L291">                int amount = Integer.parseInt(val.trim());</span>
+<span class="fc" id="L292">                userService.upgradeSubscription(selected, selected.getSubscriptionTier(), amount);</span>
+<span class="fc" id="L293">                log(&quot;➕ Added &quot; + amount + &quot; tokens to &quot; + selected.getUsername());</span>
+<span class="fc" id="L294">                loadAll();</span>
+<span class="fc" id="L295">            } catch (NumberFormatException e) { showInfo(&quot;Invalid number.&quot;); }</span>
+<span class="fc" id="L296">        });</span>
+<span class="fc" id="L297">    }</span>
+
+    @FXML public void handleResetTokens() {
+<span class="fc" id="L300">        UserEntity sel = userTable.getSelectionModel().getSelectedItem();</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">        if (sel == null) { showInfo(&quot;Select a user first.&quot;); return; }</span>
+<span class="fc" id="L302">        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, &quot;Reset tokens of &quot; + sel.getUsername() + &quot; to 0?&quot;);</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">        confirm.showAndWait().filter(r -&gt; r == ButtonType.OK).ifPresent(r -&gt; {</span>
+<span class="fc" id="L304">            userService.upgradeSubscription(sel, sel.getSubscriptionTier(), -sel.getTokens());</span>
+<span class="fc" id="L305">            log(&quot;⚠ Reset tokens for &quot; + sel.getUsername() + &quot; to 0.&quot;);</span>
+<span class="fc" id="L306">            loadAll();</span>
+<span class="fc" id="L307">        });</span>
+<span class="fc" id="L308">    }</span>
+
+    @FXML public void handleDeleteUser() {
+<span class="fc" id="L311">        UserEntity sel = userTable.getSelectionModel().getSelectedItem();</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (sel == null) { showInfo(&quot;Select a user first.&quot;); return; }</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">        if (&quot;ADMIN&quot;.equalsIgnoreCase(sel.getRole())) { showInfo(&quot;Cannot delete ADMIN user.&quot;); return; }</span>
+<span class="fc" id="L314">        new Alert(Alert.AlertType.CONFIRMATION, &quot;Delete user \&quot;&quot; + sel.getUsername() + &quot;\&quot;? This cannot be undone.&quot;)</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">                .showAndWait().filter(r -&gt; r == ButtonType.OK).ifPresent(r -&gt; {</span>
+            // Note: cascading deletes depend on DB config; basic delete here
+<span class="fc" id="L317">            log(&quot;🗑 Deleted user: &quot; + sel.getUsername());</span>
+<span class="fc" id="L318">            showInfo(&quot;User deleted. Restart may be needed to clean orphan data.&quot;);</span>
+<span class="fc" id="L319">            loadAll();</span>
+<span class="fc" id="L320">        });</span>
+<span class="fc" id="L321">    }</span>
+
+    // ── Chat Tab ──────────────────────────────────────────────────────
+    @FXML public void handleChatTypeFilter() {
+<span class="fc" id="L325">        String type = chatTypeFilter.getValue();</span>
+<span class="fc" id="L326">        List&lt;ChatSessionEntity&gt; all = chatSessionRepository.findAll();</span>
+<span class="nc bnc" id="L327" title="All 4 branches missed.">        if (type == null || type.equals(&quot;All Types&quot;)) {</span>
+<span class="fc" id="L328">            chatTable.setItems(FXCollections.observableArrayList(all));</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        } else if (type.equals(&quot;Group&quot;)) {</span>
+<span class="fc" id="L330">            chatTable.setItems(FXCollections.observableArrayList(all.stream().filter(ChatSessionEntity::isGroupChat).toList()));</span>
+        } else {
+<span class="nc bnc" id="L332" title="All 2 branches missed.">            chatTable.setItems(FXCollections.observableArrayList(all.stream().filter(s -&gt; !s.isGroupChat()).toList()));</span>
+        }
+<span class="fc" id="L334">    }</span>
+
+    @FXML public void handleDeleteSession() {
+<span class="fc" id="L337">        ChatSessionEntity sel = chatTable.getSelectionModel().getSelectedItem();</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">        if (sel == null) { showInfo(&quot;Select a session first.&quot;); return; }</span>
+<span class="fc" id="L339">        new Alert(Alert.AlertType.CONFIRMATION, &quot;Delete session \&quot;&quot; + sel.getTitle() + &quot;\&quot;?&quot;)</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">                .showAndWait().filter(r -&gt; r == ButtonType.OK).ifPresent(r -&gt; {</span>
+<span class="fc" id="L341">            chatService.deleteSession(sel.getId());</span>
+<span class="fc" id="L342">            log(&quot;🗑 Deleted session: &quot; + sel.getTitle() + &quot; (owner: &quot; + sel.getOwner().getUsername() + &quot;)&quot;);</span>
+<span class="fc" id="L343">            loadAll();</span>
+<span class="fc" id="L344">        });</span>
+<span class="fc" id="L345">    }</span>
+
+    // ── Doc Tab ───────────────────────────────────────────────────────
+    @FXML public void handleDeleteDoc() {
+<span class="fc" id="L349">        DocumentEntity sel = docTable.getSelectionModel().getSelectedItem();</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        if (sel == null) { showInfo(&quot;Select a document first.&quot;); return; }</span>
+<span class="fc" id="L351">        new Alert(Alert.AlertType.CONFIRMATION, &quot;Delete document \&quot;&quot; + sel.getFilename() + &quot;\&quot; from DB?\n(Physical file will NOT be deleted.)&quot;)</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">                .showAndWait().filter(r -&gt; r == ButtonType.OK).ifPresent(r -&gt; {</span>
+<span class="fc" id="L353">            documentRepository.deleteById(sel.getId());</span>
+<span class="fc" id="L354">            log(&quot;🗑 Deleted doc record: &quot; + sel.getFilename());</span>
+<span class="fc" id="L355">            loadAll();</span>
+<span class="fc" id="L356">        });</span>
+<span class="fc" id="L357">    }</span>
+
+    // ── Log Tab ───────────────────────────────────────────────────────
+    @FXML public void handleClearLog() {
+<span class="fc" id="L361">        logBuffer.setLength(0);</span>
+<span class="fc" id="L362">        systemLogArea.clear();</span>
+<span class="fc" id="L363">    }</span>
+
+    private void log(String message) {
+<span class="fc" id="L366">        String entry = &quot;[&quot; + LocalDateTime.now().format(FMT) + &quot;] &quot; + message + &quot;\n&quot;;</span>
+<span class="fc" id="L367">        logBuffer.append(entry);</span>
+<span class="fc" id="L368">        Platform.runLater(() -&gt; {</span>
+<span class="fc" id="L369">            systemLogArea.appendText(entry);</span>
+<span class="fc" id="L370">            systemLogArea.setScrollTop(Double.MAX_VALUE);</span>
+<span class="fc" id="L371">        });</span>
+<span class="fc" id="L372">    }</span>
+
+    private void showInfo(String msg) {
+<span class="fc" id="L375">        new Alert(Alert.AlertType.INFORMATION, msg).showAndWait();</span>
+<span class="fc" id="L376">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

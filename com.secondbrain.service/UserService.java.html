@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.service</a> &gt; <span class="el_source">UserService.java</span></div><h1>UserService.java</h1><pre class="source lang-java linenums">package com.secondbrain.service;
+
+import com.secondbrain.persistence.UserEntity;
+import com.secondbrain.persistence.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class UserService {
+
+    private final UserRepository userRepository;
+
+    @Autowired
+<span class="fc" id="L16">    public UserService(UserRepository userRepository) {</span>
+<span class="fc" id="L17">        this.userRepository = userRepository;</span>
+<span class="fc" id="L18">    }</span>
+
+    @jakarta.annotation.PostConstruct
+    public void initAdmin() {
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        if (userRepository.findByUsername(&quot;farhan&quot;).isEmpty()) {</span>
+<span class="fc" id="L23">            UserEntity admin = new UserEntity(&quot;farhan&quot;, &quot;pass123&quot;, &quot;PRO&quot;, 9999, &quot;ADMIN&quot;);</span>
+<span class="fc" id="L24">            userRepository.save(admin);</span>
+        }
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        if (userRepository.findByUsername(&quot;userbiasa&quot;).isEmpty()) {</span>
+<span class="fc" id="L27">            UserEntity user = new UserEntity(&quot;userbiasa&quot;, &quot;pass123&quot;, &quot;FREE&quot;, 10, &quot;USER&quot;);</span>
+<span class="fc" id="L28">            userRepository.save(user);</span>
+        }
+<span class="fc" id="L30">    }</span>
+
+    public UserEntity registerUser(String username, String password) {
+        // -&gt; INFO: Method ini terhubung pada file 'UserRepository.java' untuk memastikan username unik dan menyimpan user baru ke database MySQL
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (userRepository.findByUsername(username).isPresent()) {</span>
+<span class="fc" id="L35">            throw new IllegalArgumentException(&quot;Username is already taken.&quot;);</span>
+        }
+
+<span class="fc" id="L38">        UserEntity newUser = new UserEntity(username, password, &quot;FREE&quot;, 10);</span>
+<span class="fc" id="L39">        return userRepository.save(newUser);</span>
+    }
+
+    public Optional&lt;UserEntity&gt; login(String username, String password) {
+        // -&gt; INFO: Method ini terhubung pada file 'UserRepository.java' untuk mencari dan memvalidasi kredensial login user
+<span class="fc" id="L44">        Optional&lt;UserEntity&gt; userOpt = userRepository.findByUsername(username);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (userOpt.isPresent()) {</span>
+<span class="fc" id="L46">            UserEntity user = userOpt.get();</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (user.getPassword().equals(password)) { </span>
+<span class="fc" id="L48">                return Optional.of(user);</span>
+            }
+        }
+<span class="fc" id="L51">        return Optional.empty();</span>
+    }
+
+    public boolean deductToken(UserEntity user) {
+        // -&gt; INFO: Method ini berfungsi untuk mengurangi saldo token user setiap kali fitur AI digunakan dan memperbarui database
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (user.getTokens() &gt; 0) {</span>
+<span class="fc" id="L57">            user.setTokens(user.getTokens() - 1);</span>
+<span class="fc" id="L58">            userRepository.save(user);</span>
+<span class="fc" id="L59">            return true;</span>
+        }
+<span class="fc" id="L61">        return false;</span>
+    }
+
+    
+    // UPDATE: Mengganti tier dan menambah token
+    public UserEntity upgradeSubscription(UserEntity user, String tier, int addedTokens) {
+        // -&gt; INFO: Method ini menangani proses upgrade langganan dan penambahan token user
+<span class="fc" id="L68">        user.setSubscriptionTier(tier);</span>
+<span class="fc" id="L69">        user.setTokens(user.getTokens() + addedTokens);</span>
+<span class="fc" id="L70">        return userRepository.save(user);</span>
+    }
+
+    public Optional&lt;UserEntity&gt; findById(Long id) {
+<span class="fc" id="L74">        return userRepository.findById(id);</span>
+    }
+
+    public java.util.List&lt;UserEntity&gt; findAllUsers() {
+<span class="fc" id="L78">        return userRepository.findAll();</span>
+    }
+
+    public Optional&lt;UserEntity&gt; findByUsername(String username) {
+<span class="fc" id="L82">        return userRepository.findByUsername(username);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

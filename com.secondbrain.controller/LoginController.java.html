@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoginController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Second Brain Project</a> &gt; <a href="index.source.html" class="el_package">com.secondbrain.controller</a> &gt; <span class="el_source">LoginController.java</span></div><h1>LoginController.java</h1><pre class="source lang-java linenums">package com.secondbrain.controller;
+
+import com.secondbrain.persistence.UserEntity;
+import com.secondbrain.service.UserService;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.stage.Stage;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.Optional;
+
+@Component
+<span class="fc" id="L22">public class LoginController {</span>
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private ApplicationContext applicationContext;
+
+    @FXML private TextField usernameField;
+    @FXML private PasswordField passwordField;
+    @FXML private Label errorLabel;
+
+    @FXML
+    public void initialize() {
+        // Run later to focus on the username field
+<span class="fc" id="L37">        Platform.runLater(() -&gt; usernameField.requestFocus());</span>
+<span class="fc" id="L38">    }</span>
+
+    @FXML
+    public void handleLogin() {
+        // -&gt; INFO: Kode ini terhubung pada file 'UserService.java' method 'login()' untuk memvalidasi user dari database
+<span class="fc" id="L43">        String username = usernameField.getText();</span>
+<span class="fc" id="L44">        String password = passwordField.getText();</span>
+
+<span class="pc bpc" id="L46" title="2 of 4 branches missed.">        if (username.isEmpty() || password.isEmpty()) {</span>
+<span class="fc" id="L47">            showError(&quot;Username and Password are required.&quot;);</span>
+<span class="fc" id="L48">            return;</span>
+        }
+
+<span class="fc" id="L51">        Optional&lt;UserEntity&gt; userOpt = userService.login(username, password);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (userOpt.isPresent()) {</span>
+<span class="fc" id="L53">            goToMainView(userOpt.get());</span>
+        } else {
+<span class="fc" id="L55">            showError(&quot;Invalid credentials.&quot;);</span>
+        }
+<span class="fc" id="L57">    }</span>
+
+    @FXML
+    public void handleRegister() {
+        // -&gt; INFO: Kode ini terhubung pada file 'UserService.java' method 'registerUser()' untuk menyimpan data user baru
+<span class="fc" id="L62">        String username = usernameField.getText();</span>
+<span class="fc" id="L63">        String password = passwordField.getText();</span>
+
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">        if (username.isEmpty() || password.isEmpty()) {</span>
+<span class="fc" id="L66">            showError(&quot;Username and Password are required.&quot;);</span>
+<span class="fc" id="L67">            return;</span>
+        }
+
+        try {
+<span class="fc" id="L71">            UserEntity newUser = userService.registerUser(username, password);</span>
+<span class="fc" id="L72">            showSuccess(&quot;Registration successful! Please login.&quot;);</span>
+<span class="fc" id="L73">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L74">            showError(e.getMessage());</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">    }</span>
+
+    private void showError(String message) {
+<span class="fc" id="L79">        errorLabel.setStyle(&quot;-fx-text-fill: #ef4444;&quot;);</span>
+<span class="fc" id="L80">        errorLabel.setText(message);</span>
+<span class="fc" id="L81">    }</span>
+
+    private void showSuccess(String message) {
+<span class="fc" id="L84">        errorLabel.setStyle(&quot;-fx-text-fill: #10b981;&quot;);</span>
+<span class="fc" id="L85">        errorLabel.setText(message);</span>
+<span class="fc" id="L86">    }</span>
+
+    private void goToMainView(UserEntity user) {
+        // -&gt; INFO: Kode ini terhubung pada file 'main-view.fxml' untuk transisi antarmuka dan 'MainController.java' method 'setCurrentUser()' untuk passing data
+        try {
+<span class="fc" id="L91">            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource(&quot;/com/secondbrain/main-view.fxml&quot;));</span>
+<span class="fc" id="L92">            fxmlLoader.setControllerFactory(applicationContext::getBean); // Biar Spring yang inject Controller</span>
+            
+<span class="fc" id="L94">            Parent root = fxmlLoader.load();</span>
+
+            // Set user di MainController
+<span class="fc" id="L97">            MainController mainController = fxmlLoader.getController();</span>
+<span class="fc" id="L98">            mainController.setCurrentUser(user);</span>
+
+            // Ubah scene di Stage saat ini
+<span class="fc" id="L101">            Stage stage = (Stage) usernameField.getScene().getWindow();</span>
+<span class="fc" id="L102">            Scene scene = new Scene(root, 900, 600);</span>
+<span class="fc" id="L103">            stage.setTitle(&quot;Second Brain Desktop AI - &quot; + user.getUsername());</span>
+<span class="fc" id="L104">            stage.setScene(scene);</span>
+<span class="fc" id="L105">        } catch (IOException e) {</span>
+<span class="fc" id="L106">            showError(&quot;Failed to load main view.&quot;);</span>
+<span class="fc" id="L107">        }</span>
+<span class="fc" id="L108">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
