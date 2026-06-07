@@ -102,20 +102,6 @@
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.11</version>
-				<configuration>
-					<excludes>
-						<!-- Mengecualikan semua file kecuali TextNote agar coverage 100% -->
-						<exclude>**/controller/**</exclude>
-						<exclude>**/service/**</exclude>
-						<exclude>**/persistence/**</exclude>
-						<exclude>**/*Application*</exclude>
-						<exclude>**/*Initializer*</exclude>
-						<exclude>**/*Event*</exclude>
-						<exclude>**/DocumentSource*</exclude>
-						<exclude>**/PDFDocument*</exclude>
-						<exclude>**/TextSegment*</exclude>
-					</excludes>
-				</configuration>
 				<executions>
 					<execution>
 						<goals>
