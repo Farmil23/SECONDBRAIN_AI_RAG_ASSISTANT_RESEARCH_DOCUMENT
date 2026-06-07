@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox alignment="CENTER" spacing="20" styleClass="root" stylesheets="@javafx-style.css" xmlns:fx="http://javafx.com/fxml" fx:controller="com.secondbrain.controller.UpgradeController">
+    <padding>
+        <Insets bottom="30" left="30" right="30" top="30"/>
+    </padding>
+
+    <!-- ========================================================= -->
+    <!-- JUDUL LAYAR MODAL POP-UP UPGRADE                          -->
+    <!-- ========================================================= -->
+    <Label text="Upgrade to PRO" styleClass="header-text" />
+    <Label text="Choose a subscription plan to get more tokens!" styleClass="sub-header-text" />
+    
+    <!-- ========================================================= -->
+    <!-- KOTAK PILIHAN LANGGANAN (Event onMouseClicked/onAction)   -->
+    <!-- ========================================================= -->
+    <HBox spacing="20" alignment="CENTER">
+        <!-- Kartu 1: Paket Bulanan -->
+        <VBox styleClass="upload-card" spacing="10" alignment="CENTER" prefWidth="200" onMouseClicked="#selectMonthlyMouse">
+            <Label text="Monthly" styleClass="text" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label text="Rp 150.000 / bln" styleClass="text" style="-fx-text-fill: #f59e0b; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <Label text="1,000 Tokens/bln" styleClass="small-text"/>
+            <Button text="Select" onAction="#selectMonthly" styleClass="btn-primary" />
+        </VBox>
+
+        <!-- Annual Plan -->
+        <VBox styleClass="upload-card" spacing="10" alignment="CENTER" prefWidth="200" onMouseClicked="#selectAnnualMouse">
+            <Label text="Annual" styleClass="text" style="-fx-font-weight: bold; -fx-font-size: 16px;"/>
+            <Label text="Rp 1.500.000 / thn" styleClass="text" style="-fx-text-fill: #f59e0b; -fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <Label text="15,000 Tokens/thn" styleClass="small-text"/>
+            <Label text="Save 16%!" styleClass="small-text" style="-fx-text-fill: #10b981;"/>
+            <Button text="Select" onAction="#selectAnnual" styleClass="btn-primary" />
+        </VBox>
+    </HBox>
+
+    <Button text="Cancel" onAction="#handleCancel" styleClass="btn-danger" />
+</VBox>

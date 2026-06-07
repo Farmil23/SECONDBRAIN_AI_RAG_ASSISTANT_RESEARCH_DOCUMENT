@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Feature Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .user-profile {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .user-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .username-badge {
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tier-badge {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .tier-free {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+        }
+
+        .tier-pro {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2));
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .token-info {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .token-count {
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-upgrade {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border: none;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            flex-grow: 1;
+            transition: transform 0.2s;
+        }
+
+        .btn-upgrade:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            flex-grow: 1;
+            transition: background 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .alert-flash {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86efac;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .chat-sessions {
+            margin-bottom: 20px;
+        }
+        
+        .chat-session-card {
+            display: block;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #e2e8f0;
+            text-decoration: none;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        .chat-session-card:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .chat-session-card.active {
+            background: rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+        }
+
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; 
+            width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+            justify-content: center; align-items: center; 
+        }
+        .modal-content {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            width: 300px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .modal-content h3 { margin-top: 0; color: white;}
+        .modal-content input, .modal-content select { width: 100%; padding: 8px; margin: 10px 0; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; }
+        .modal-controls { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
+        .modal-controls button { padding: 6px 12px; cursor: pointer; border-radius: 6px; border: none; font-weight: 600; }
+        .btn-cancel { background: #64748b; color: white; }
+        .btn-submit { background: #3b82f6; color: white; }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>🧠 Second Brain</h2>
+            </div>
+
+            <div th:if="${message}" class="alert-flash">
+                <span th:text="${message}"></span>
+            </div>
+
+            <div class="user-profile">
+                <!-- User Profile Content -->
+                <div class="user-header">
+                    <div class="username-badge">
+                        👤 <span th:text="${user.username}">User</span>
+                    </div>
+                    <span th:class="${user.subscriptionTier == 'PRO' ? 'tier-badge tier-pro' : 'tier-badge tier-free'}"
+                        th:text="${user.subscriptionTier}">FREE</span>
+                </div>
+                <div class="token-info">
+                    <span>Tokens left:</span>
+                    <span class="token-count">🪙 <span th:text="${user.tokens}">10</span></span>
+                </div>
+                <div class="action-buttons">
+                    <a th:if="${user.subscriptionTier == 'FREE'}" href="/subscription" class="btn-upgrade"
+                        style="text-align: center; text-decoration: none; padding-top: 8px;">⭐ Upgrade PRO</a>
+                    <a href="/logout" class="btn-logout" style="padding-top: 8px;">Logout</a>
+                </div>
+            </div>
+
+            <div th:if="${user.role == 'ADMIN'}" style="margin-bottom: 20px;">
+                <a href="/admin" style="display: block; width: 100%; text-align: center; background: rgba(59, 130, 246, 0.2); border: 1px solid #3b82f6; color: #60a5fa; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: 600;">🛡️ Admin Dashboard</a>
+            </div>
+
+            <!-- Personal Chats -->
+            <div class="chat-sessions">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3>💬 Personal Chats</h3>
+                    <button onclick="document.getElementById('createChatModal').style.display='flex'; document.querySelector('#createChatModal select').value='false';" style="background:none; border:none; color: #3b82f6; cursor:pointer;">+ New</button>
+                </div>
+                
+                <div th:each="sess : ${allSessions}" th:if="${!sess.isGroupChat}">
+                    <div th:class="${currentSession != null && currentSession.id == sess.id ? 'chat-session-card active' : 'chat-session-card'}" style="display: flex; justify-content: space-between; align-items: center;">
+                        <a th:href="@{'/?sessionId=' + ${sess.id}}" style="color: inherit; text-decoration: none; flex-grow: 1;">
+                            <span>🔒 </span>
+                            <span th:text="${sess.title}">Session</span>
+                        </a>
+                        <button th:if="${sess.owner.id == user.id}" th:onclick="'openDeleteModal(' + ${sess.id} + ')'" style="background:none; border:none; color:#ef4444; cursor:pointer;" title="Delete">✕</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group Chats -->
+            <div class="chat-sessions">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3>👥 Group Chats</h3>
+                    <button onclick="document.getElementById('createChatModal').style.display='flex'; document.querySelector('#createChatModal select').value='true';" style="background:none; border:none; color: #3b82f6; cursor:pointer;">+ New</button>
+                </div>
+                
+                <div th:each="sess : ${allSessions}" th:if="${sess.isGroupChat}">
+                    <div th:class="${currentSession != null && currentSession.id == sess.id ? 'chat-session-card active' : 'chat-session-card'}" style="display: flex; justify-content: space-between; align-items: center;">
+                        <a th:href="@{'/?sessionId=' + ${sess.id}}" style="color: inherit; text-decoration: none; flex-grow: 1;">
+                            <span>👥 </span>
+                            <span th:text="${sess.title}">Session</span>
+                        </a>
+                        <div style="display: flex; gap: 5px;">
+                            <button th:if="${sess.owner.id == user.id}" th:onclick="'openInviteModal(' + ${sess.id} + ')'" style="background:none; border:none; color:#10b981; cursor:pointer; font-weight:bold;" title="Invite">+</button>
+                            <button th:if="${sess.owner.id == user.id}" th:onclick="'openDeleteModal(' + ${sess.id} + ')'" style="background:none; border:none; color:#ef4444; cursor:pointer;" title="Delete">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <form method="POST" action="/upload" enctype="multipart/form-data" class="upload-form">
+                    <label for="file" class="upload-label">
+                        <span class="upload-icon">☁️</span>
+                        <span>Upload PDF</span>
+                    </label>
+                    <input type="file" name="file" id="file" accept=".pdf" required onchange="this.form.submit()"
+                        hidden>
+                </form>
+            </div>
+
+            <div class="file-list-section">
+                <h3>📂 Global Files (<span th:text="${memorySize}">0</span> docs)</h3>
+                <div class="file-grid-sidebar">
+                    <div th:each="file : ${dbFiles}" class="file-card-mini" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; margin-bottom: 5px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <a th:href="@{'/files/' + ${file.filename}}" download style="text-decoration: none; color: inherit; flex-grow: 1; display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                            <div class="card-icon-mini" style="margin-right: 8px; font-size: 1.2rem;">📄</div>
+                            <div class="card-info-mini" style="overflow: hidden; text-overflow: ellipsis;">
+                                <span class="file-name" th:text="${file.filename}" style="font-size: 0.85rem;">Document.pdf</span>
+                            </div>
+                        </a>
+                        <div th:if="${currentSession != null}" style="margin-left: 10px;">
+                            <form th:if="${!#lists.contains(assignedDocIds, file.id)}" method="POST" action="/chat/document/assign" style="margin: 0;">
+                                <input type="hidden" name="sessionId" th:value="${currentSession.id}" />
+                                <input type="hidden" name="docId" th:value="${file.id}" />
+                                <button type="submit" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='rgba(16, 185, 129, 0.2)'" onmouseout="this.style.background='rgba(16, 185, 129, 0.1)'" title="Add to Context">Enable</button>
+                            </form>
+                            <form th:if="${#lists.contains(assignedDocIds, file.id)}" method="POST" action="/chat/document/remove" style="margin: 0;">
+                                <input type="hidden" name="sessionId" th:value="${currentSession.id}" />
+                                <input type="hidden" name="docId" th:value="${file.id}" />
+                                <button type="submit" style="background: rgba(16, 185, 129, 0.8); border: 1px solid #10b981; color: white; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.7rem; font-weight: 600; transition: 0.2s;" onmouseover="this.style.background='#10b981'" onmouseout="this.style.background='rgba(16, 185, 129, 0.8)'" title="Remove from Context">Active</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="file-list-section" th:if="${currentSession != null && currentSession.isGroupChat() && groupDocs != null}">
+                <h3 style="margin-top: 15px;">👥 Group Context (<span th:text="${#lists.size(groupDocs)}">0</span> docs)</h3>
+                <div class="file-grid-sidebar">
+                    <div th:each="doc : ${groupDocs}" class="file-card-mini" style="display: flex; flex-direction: column; padding: 8px; margin-bottom: 5px; border-radius: 8px; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <a th:href="@{'/files/' + ${doc.filename}}" download style="text-decoration: none; color: inherit; flex-grow: 1; display: flex; align-items: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                                <div class="card-icon-mini" style="margin-right: 8px; font-size: 1.2rem;">📄</div>
+                                <div class="card-info-mini" style="overflow: hidden; text-overflow: ellipsis;">
+                                    <span class="file-name" th:text="${doc.filename}" style="font-size: 0.85rem; font-weight: 600; color: #34d399;">Document.pdf</span>
+                                </div>
+                            </a>
+                            <div style="margin-left: 10px;">
+                                <form th:if="${doc.isOwner}" method="POST" action="/chat/document/remove" style="margin: 0;">
+                                    <input type="hidden" name="sessionId" th:value="${currentSession.id}" />
+                                    <input type="hidden" name="docId" th:value="${doc.id}" />
+                                    <button type="submit" style="background: rgba(16, 185, 129, 0.8); border: 1px solid #10b981; color: white; padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.65rem; font-weight: 600;" title="Remove from Context">Active</button>
+                                </form>
+                                <button th:if="${!doc.isOwner}" disabled style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(255,255,255,0.5); padding: 4px 8px; border-radius: 6px; cursor: not-allowed; font-size: 0.65rem; font-weight: 600;" title="Uploaded by another user">Locked</button>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.7rem; color: #94a3b8; display: flex; justify-content: space-between;">
+                            <span th:text="'Uploaded by: ' + ${doc.uploaderName}">Uploaded by: Unknown</span>
+                            <span th:if="${doc.isOwner}" style="color: #3b82f6;">(You)</span>
+                        </div>
+                    </div>
+                    <div th:if="${#lists.isEmpty(groupDocs)}" style="font-size: 0.8rem; color: #94a3b8; font-style: italic; text-align: center; padding: 10px;">
+                        No documents shared in this group yet.
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container glass-panel">
+            <div class="chat-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 th:text="${currentSession != null ? currentSession.title : '💬 Chat with Agent'}">💬 Chat</h3>
+                <div th:if="${currentSession != null && currentSession.owner.id == user.id}">
+                    <button onclick="document.getElementById('renameChatModal').style.display='flex'" style="background:none; border:1px solid #64748b; color:#cbd5e1; border-radius:4px; padding:4px 8px; cursor:pointer;" title="Rename Chat">✏️ Rename</button>
+                    <button th:onclick="'openDeleteModal(' + ${currentSession.id} + ')'" style="background:none; border:1px solid #ef4444; color:#fca5a5; border-radius:4px; padding:4px 8px; cursor:pointer; margin-left: 5px;" title="Delete Chat">🗑️ Delete</button>
+                </div>
+            </div>
+
+            <div class="chat-history" id="chatHistory" th:data-sessionid="${currentSession != null ? currentSession.id : ''}">
+                <div th:each="msg : ${chatMessages}"
+                     th:class="${msg.senderName == user.username ? 'chat-message user' : 'chat-message bot'}">
+                     
+                     <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 4px;" th:text="${msg.senderName}"></div>
+                     <span class="msg-content" th:text="${msg.messageContent}"></span>
+                </div>
+                
+                <div th:if="${#lists.isEmpty(chatMessages)}" class="empty-chat">
+                    <div class="welcome-message">
+                        <h1 th:text="'Welcome to ' + ${currentSession != null ? currentSession.title : 'Chat'} + '! 👋'"></h1>
+                        <p th:if="${currentSession != null && currentSession.isGroupChat}">You are in a group chat. Mention <b>@secondbrain</b> if you want the AI to respond!</p>
+                        <p th:if="${currentSession != null && !currentSession.isGroupChat}">This is a private chat. I'm your Second Brain, ask me anything!</p>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div id="typingIndicator" class="typing-indicator" style="display:none;">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <form method="POST" action="/ask" class="chat-form" onsubmit="return submitForm()">
+                    <input type="hidden" name="sessionId" th:value="${currentSession != null ? currentSession.id : ''}" />
+                    <input type="text" name="question" placeholder="Type a message... (use @secondbrain in groups for AI)" required
+                        autocomplete="off">
+                    <button type="submit" class="send-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="createChatModal" class="modal">
+        <div class="modal-content">
+            <h3>Create New Chat</h3>
+            <form action="/chat/create" method="POST">
+                <input type="text" name="title" placeholder="Chat Title" required>
+                <select name="isGroup">
+                    <option value="false">Private Chat</option>
+                    <option value="true">Group Chat</option>
+                </select>
+                <div class="modal-controls">
+                    <button type="button" class="btn-cancel" onclick="document.getElementById('createChatModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-submit">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="renameChatModal" class="modal" th:if="${currentSession != null}">
+        <div class="modal-content">
+            <h3>Rename Chat</h3>
+            <form action="/chat/rename" method="POST">
+                <input type="hidden" name="sessionId" th:value="${currentSession.id}">
+                <input type="text" name="newTitle" th:value="${currentSession.title}" required>
+                <div class="modal-controls">
+                    <button type="button" class="btn-cancel" onclick="document.getElementById('renameChatModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-submit">Rename</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="deleteChatModal" class="modal">
+        <div class="modal-content">
+            <h3>Delete Chat</h3>
+            <p style="color: #cbd5e1; font-size: 0.9rem;">Are you sure you want to delete this chat history? This action cannot be undone.</p>
+            <form action="/chat/delete" method="POST">
+                <input type="hidden" name="sessionId" id="deleteSessionId">
+                <div class="modal-controls">
+                    <button type="button" class="btn-cancel" onclick="document.getElementById('deleteChatModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-submit" style="background:#ef4444;">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="inviteModal" class="modal">
+        <div class="modal-content">
+            <h3>Invite to Group</h3>
+            <form action="/chat/invite" method="POST">
+                <input type="hidden" name="sessionId" id="inviteSessionId">
+                <input type="text" name="username" placeholder="Username to invite" required>
+                <div class="modal-controls">
+                    <button type="button" class="btn-cancel" onclick="document.getElementById('inviteModal').style.display='none'">Cancel</button>
+                    <button type="submit" class="btn-submit">Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const currentUser = /*[[${user.username}]]*/ 'User';
+        const chatHistory = document.getElementById('chatHistory');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const sessionId = chatHistory.getAttribute('data-sessionid');
+
+        // Auto-scroll to bottom
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function submitForm() {
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+            return true;
+        }
+
+        function openDeleteModal(id) {
+            document.getElementById('deleteSessionId').value = id;
+            document.getElementById('deleteChatModal').style.display = 'flex';
+        }
+
+        function openInviteModal(id) {
+            document.getElementById('inviteSessionId').value = id;
+            document.getElementById('inviteModal').style.display = 'flex';
+        }
+
+        window.onload = function () {
+            scrollToBottom();
+            formatMessages();
+            
+            // Auto-polling for group chat messages
+            if (sessionId) {
+                setInterval(pollMessages, 3000);
+            }
+        };
+        
+        let lastMessageCount = 0;
+        
+        async function pollMessages() {
+            try {
+                const response = await fetch(`/chat/messages/api?sessionId=${sessionId}`);
+                const msgs = await response.json();
+                
+                if (msgs.length > lastMessageCount) {
+                    // Update UI if there are new messages
+                    // A simple page reload avoids complicated DOM manipulation for markdown parsing
+                    // but doing partial updates is nicer:
+                    const existingMsgs = document.querySelectorAll('.chat-message').length;
+                    if(msgs.length > existingMsgs) {
+                        typingIndicator.style.display = 'none'; // Clear any typing indicator from others
+                        chatHistory.innerHTML = '';
+                        
+                        msgs.forEach(msg => {
+                            const div = document.createElement('div');
+                            div.className = msg.sender === currentUser ? 'chat-message user' : 'chat-message bot';
+                            
+                            const senderDiv = document.createElement('div');
+                            senderDiv.style.cssText = 'font-size: 0.75rem; opacity: 0.7; margin-bottom: 4px;';
+                            senderDiv.innerText = msg.sender;
+                            
+                            const contentSpan = document.createElement('span');
+                            contentSpan.className = 'msg-content';
+                            contentSpan.innerText = msg.content;
+                            
+                            div.appendChild(senderDiv);
+                            div.appendChild(contentSpan);
+                            chatHistory.appendChild(div);
+                        });
+                        
+                        chatHistory.appendChild(typingIndicator); // put typing indicator back at bottom
+                        formatMessages();
+                        scrollToBottom();
+                        lastMessageCount = msgs.length;
+                    }
+                } else if(msgs.length === 0 && lastMessageCount === 0) {
+                     lastMessageCount = msgs.length;
+                }
+            } catch (e) {
+                console.error("Failed to poll messages", e);
+            }
+        }
+
+        function formatMessages() {
+            const messages = document.querySelectorAll('.msg-content');
+            messages.forEach(msg => {
+                let text = msg.innerText;
+                text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                msg.innerHTML = text;
+            });
+        }
+        /*]]>*/
+    </script>
+</body>
+
+</html>

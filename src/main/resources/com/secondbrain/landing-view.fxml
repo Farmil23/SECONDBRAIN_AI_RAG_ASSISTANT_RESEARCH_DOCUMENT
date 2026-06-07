@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Rectangle?>
+
+<HBox styleClass="root" stylesheets="@javafx-style.css"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.secondbrain.controller.LandingController"
+      prefWidth="1000" prefHeight="640">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- LEFT PANEL: Branding Hero (400px)                       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <VBox prefWidth="420" minWidth="380"
+          alignment="CENTER"
+          style="-fx-background-color: linear-gradient(to bottom, #0f172a, #1e1b4b);
+                 -fx-padding: 60 48;
+                 -fx-spacing: 28;
+                 -fx-border-color: rgba(255,255,255,0.06);
+                 -fx-border-width: 0 1 0 0;">
+
+        <!-- Logo -->
+        <HBox alignment="CENTER" spacing="14">
+            <Circle radius="14" fill="#3b82f6"
+                    style="-fx-effect: dropshadow(three-pass-box, rgba(59,130,246,0.6), 16, 0, 0, 0);"/>
+            <Label text="Second Brain"
+                   style="-fx-text-fill: #f8fafc; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+        </HBox>
+
+        <!-- Tagline -->
+        <Label text="Your AI-powered knowledge companion"
+               style="-fx-text-fill: #94a3b8; -fx-font-size: 15px;"
+               wrapText="true" alignment="CENTER"/>
+
+        <!-- Separator -->
+        <Region style="-fx-background-color: rgba(255,255,255,0.08); -fx-min-height: 1; -fx-max-height: 1;"
+                maxWidth="240"/>
+
+        <!-- Feature list -->
+        <VBox spacing="16">
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Circle radius="18"
+                        style="-fx-fill: rgba(59,130,246,0.15);
+                               -fx-stroke: rgba(59,130,246,0.35); -fx-stroke-width: 1;"/>
+                <Label text="📁" style="-fx-font-size: 18px;" translateX="-36"/>
+                <VBox spacing="2" translateX="-22">
+                    <Label text="Workspaces"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="Chat AI with your own documents as context"
+                           style="-fx-text-fill: #64748b; -fx-font-size: 12px;" wrapText="true" maxWidth="220"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Circle radius="18"
+                        style="-fx-fill: rgba(16,185,129,0.15);
+                               -fx-stroke: rgba(16,185,129,0.35); -fx-stroke-width: 1;"/>
+                <Label text="👥" style="-fx-font-size: 18px;" translateX="-36"/>
+                <VBox spacing="2" translateX="-22">
+                    <Label text="Groups"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="Collaborate in shared group chats with teammates"
+                           style="-fx-text-fill: #64748b; -fx-font-size: 12px;" wrapText="true" maxWidth="220"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Circle radius="18"
+                        style="-fx-fill: rgba(245,158,11,0.15);
+                               -fx-stroke: rgba(245,158,11,0.35); -fx-stroke-width: 1;"/>
+                <Label text="🤖" style="-fx-font-size: 18px;" translateX="-36"/>
+                <VBox spacing="2" translateX="-22">
+                    <Label text="AI Agent (Jarvis)"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="Powered by GPT-4o with document-aware RAG"
+                           style="-fx-text-fill: #64748b; -fx-font-size: 12px;" wrapText="true" maxWidth="220"/>
+                </VBox>
+            </HBox>
+
+            <HBox spacing="14" alignment="CENTER_LEFT">
+                <Circle radius="18"
+                        style="-fx-fill: rgba(168,85,247,0.15);
+                               -fx-stroke: rgba(168,85,247,0.35); -fx-stroke-width: 1;"/>
+                <Label text="📄" style="-fx-font-size: 18px;" translateX="-36"/>
+                <VBox spacing="2" translateX="-22">
+                    <Label text="PDF Intelligence"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Label text="Upload PDFs and ask anything about their contents"
+                           style="-fx-text-fill: #64748b; -fx-font-size: 12px;" wrapText="true" maxWidth="220"/>
+                </VBox>
+            </HBox>
+
+        </VBox>
+
+        <!-- Version badge -->
+        <Label text="v1.0  ·  Spring Boot + JavaFX 17"
+               style="-fx-text-fill: #334155; -fx-font-size: 11px; -fx-padding: 20 0 0 0;"/>
+
+    </VBox>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- RIGHT PANEL: How It Works + CTA                         -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <VBox HBox.hgrow="ALWAYS" alignment="CENTER" spacing="32"
+          style="-fx-background-color: #0f172a; -fx-padding: 60 56;">
+
+        <!-- Header -->
+        <VBox spacing="8" alignment="CENTER">
+            <Label text="How It Works"
+                   style="-fx-text-fill: #f8fafc; -fx-font-size: 26px; -fx-font-weight: bold;"/>
+            <Label text="Get started in 3 simple steps"
+                   style="-fx-text-fill: #64748b; -fx-font-size: 14px;"/>
+        </VBox>
+
+        <!-- Steps -->
+        <VBox spacing="0" maxWidth="440">
+
+            <!-- Step 1 -->
+            <HBox spacing="20" alignment="TOP_LEFT">
+                <VBox alignment="CENTER" spacing="0">
+                    <Label text="1"
+                           style="-fx-background-color: #3b82f6; -fx-text-fill: white;
+                                  -fx-font-weight: bold; -fx-font-size: 14px;
+                                  -fx-padding: 8 14; -fx-background-radius: 50;"/>
+                    <Rectangle width="2" height="36"
+                               style="-fx-fill: rgba(59,130,246,0.25);"/>
+                </VBox>
+                <VBox spacing="4" style="-fx-padding: 6 0 0 0;">
+                    <Label text="Create an Account"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="Register with a username and password. New accounts start with 10 free AI tokens."
+                           style="-fx-text-fill: #64748b; -fx-font-size: 13px;" wrapText="true" maxWidth="330"/>
+                </VBox>
+            </HBox>
+
+            <!-- Step 2 -->
+            <HBox spacing="20" alignment="TOP_LEFT">
+                <VBox alignment="CENTER" spacing="0">
+                    <Label text="2"
+                           style="-fx-background-color: #10b981; -fx-text-fill: white;
+                                  -fx-font-weight: bold; -fx-font-size: 14px;
+                                  -fx-padding: 8 14; -fx-background-radius: 50;"/>
+                    <Rectangle width="2" height="36"
+                               style="-fx-fill: rgba(16,185,129,0.25);"/>
+                </VBox>
+                <VBox spacing="4" style="-fx-padding: 6 0 0 0;">
+                    <Label text="Upload Your Documents"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="In Workspace mode, click 📎 Docs to upload PDFs. Attach them to a chat as AI context."
+                           style="-fx-text-fill: #64748b; -fx-font-size: 13px;" wrapText="true" maxWidth="330"/>
+                </VBox>
+            </HBox>
+
+            <!-- Step 3 -->
+            <HBox spacing="20" alignment="TOP_LEFT">
+                <VBox alignment="CENTER" spacing="0">
+                    <Label text="3"
+                           style="-fx-background-color: #a78bfa; -fx-text-fill: white;
+                                  -fx-font-weight: bold; -fx-font-size: 14px;
+                                  -fx-padding: 8 14; -fx-background-radius: 50;"/>
+                </VBox>
+                <VBox spacing="4" style="-fx-padding: 6 0 0 0;">
+                    <Label text="Ask, Collaborate &amp; Explore"
+                           style="-fx-text-fill: #e2e8f0; -fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="Chat with Jarvis AI in your Workspace, or join Groups to collaborate. Mention @badsfarmil in a group to invoke AI."
+                           style="-fx-text-fill: #64748b; -fx-font-size: 13px;" wrapText="true" maxWidth="330"/>
+                </VBox>
+            </HBox>
+
+        </VBox>
+
+        <!-- Token info -->
+        <HBox spacing="10" alignment="CENTER"
+              style="-fx-background-color: rgba(245,158,11,0.08);
+                     -fx-border-color: rgba(245,158,11,0.2);
+                     -fx-border-radius: 10; -fx-background-radius: 10;
+                     -fx-padding: 12 20;" maxWidth="440">
+            <Label text="⚡" style="-fx-font-size: 16px;"/>
+            <Label text="Each AI response costs 1 token. Upgrade to PRO for 1,000+ tokens."
+                   style="-fx-text-fill: #fbbf24; -fx-font-size: 12px;" wrapText="true" maxWidth="360"/>
+        </HBox>
+
+        <!-- CTA Buttons -->
+        <HBox spacing="16" alignment="CENTER">
+            <Button text="  Get Started →  " onAction="#handleGetStarted"
+                    style="-fx-background-color: linear-gradient(to right, #3b82f6, #6366f1);
+                           -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold;
+                           -fx-background-radius: 30; -fx-padding: 14 36;
+                           -fx-cursor: hand;
+                           -fx-effect: dropshadow(three-pass-box, rgba(99,102,241,0.5), 12, 0, 0, 3);"/>
+            <Button text="Already have an account? Login" onAction="#handleGoToLogin"
+                    style="-fx-background-color: transparent;
+                           -fx-text-fill: #64748b; -fx-font-size: 13px;
+                           -fx-border-color: transparent; -fx-cursor: hand;
+                           -fx-padding: 14 8;"/>
+        </HBox>
+
+    </VBox>
+
+</HBox>

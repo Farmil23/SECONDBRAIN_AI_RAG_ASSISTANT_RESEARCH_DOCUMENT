@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Rectangle?>
+
+<VBox stylesheets="@javafx-style.css" styleClass="root"
+      xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.secondbrain.controller.AdminFXController"
+      prefWidth="1100" prefHeight="700" spacing="0">
+
+    <!-- ═══ TOP HEADER BAR ═══ -->
+    <HBox alignment="CENTER_LEFT" spacing="12"
+          style="-fx-background-color: #111827;
+                 -fx-padding: 16 24 16 24;
+                 -fx-border-color: rgba(255,255,255,0.06);
+                 -fx-border-width: 0 0 1 0;">
+        <Circle radius="7" fill="#3b82f6"/>
+        <Label text="Admin Control Center" styleClass="header-text" HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lblLastRefresh" text="Last refresh: —" styleClass="small-text"/>
+        <Button text="⟳  Refresh" onAction="#handleRefresh" styleClass="btn-sm-blue"
+                style="-fx-padding: 6 14; -fx-font-size: 12px;"/>
+    </HBox>
+
+    <!-- ═══ STAT CARDS ROW ═══ -->
+    <HBox spacing="12" style="-fx-padding: 20 24 0 24;">
+
+        <!-- Total Users -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="TOTAL USERS" styleClass="stat-label"/>
+            <Label fx:id="lblTotalUsers" text="0" styleClass="stat-value"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#3b82f6"/>
+                <Label fx:id="lblNewUsersHint" text="registered" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- PRO Users -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="PRO SUBSCRIBERS" styleClass="stat-label"/>
+            <Label fx:id="lblProUsers" text="0"
+                   style="-fx-text-fill: #3b82f6; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#3b82f6"/>
+                <Label fx:id="lblFreeUsers" text="0 FREE" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- Total Chats -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="TOTAL CHATS" styleClass="stat-label"/>
+            <Label fx:id="lblTotalChats" text="0"
+                   style="-fx-text-fill: #a78bfa; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#a78bfa"/>
+                <Label fx:id="lblGroupChats" text="0 groups" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- Total Documents -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="DOCUMENTS UPLOADED" styleClass="stat-label"/>
+            <Label fx:id="lblTotalDocs" text="0"
+                   style="-fx-text-fill: #fb923c; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#fb923c"/>
+                <Label text="total PDFs in system" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- System Tokens -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="TOKENS REMAINING" styleClass="stat-label"/>
+            <Label fx:id="lblTotalTokens" text="0"
+                   style="-fx-text-fill: #f59e0b; -fx-font-size: 28px; -fx-font-weight: bold;"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#f59e0b"/>
+                <Label text="across all users" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+        <!-- Est Revenue -->
+        <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+            <Label text="EST. REVENUE" styleClass="stat-label"/>
+            <Label fx:id="lblRevenue" text="Rp 0"
+                   style="-fx-text-fill: #10b981; -fx-font-size: 22px; -fx-font-weight: bold;"/>
+            <HBox spacing="6" alignment="CENTER_LEFT" style="-fx-padding: 6 0 0 0;">
+                <Circle radius="4" fill="#10b981"/>
+                <Label text="PRO subscriptions" styleClass="small-text"/>
+            </HBox>
+        </VBox>
+
+    </HBox>
+
+    <!-- ═══ TAB PANE ═══ -->
+    <TabPane fx:id="adminTabPane" VBox.vgrow="ALWAYS" tabClosingPolicy="UNAVAILABLE"
+             style="-fx-background-color: transparent; -fx-padding: 12 20 16 20;
+                    -fx-tab-min-width: 120; -fx-tab-max-width: 160;">
+
+        <!-- ── Tab 1: User Management ── -->
+        <Tab text="👤  Users">
+            <VBox spacing="10">
+                <!-- Table toolbar -->
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <TextField fx:id="searchField" promptText="🔍  Search username..."
+                               styleClass="chat-input"
+                               style="-fx-pref-width: 240; -fx-padding: 7 14;"
+                               onKeyReleased="#handleSearch"/>
+                    <Label text="Filter:" styleClass="small-text"/>
+                    <ComboBox fx:id="tierFilter" promptText="All Tiers" styleClass="btn-sm"
+                              onAction="#handleTierFilter"
+                              style="-fx-pref-width: 130;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="+ Add Token" onAction="#handleAddToken" styleClass="btn-sm-blue"
+                            style="-fx-padding: 6 14;"/>
+                    <Button text="⚠ Reset Tokens" onAction="#handleResetTokens" styleClass="btn-sm"
+                            style="-fx-padding: 6 14;"/>
+                    <Button text="🗑 Delete User" onAction="#handleDeleteUser" styleClass="btn-icon-red"
+                            style="-fx-padding: 6 14; -fx-border-color: rgba(239,68,68,0.3);
+                                   -fx-border-radius: 8; -fx-border-width: 1; -fx-background-color: rgba(239,68,68,0.08);"/>
+                </HBox>
+
+                <TableView fx:id="userTable" VBox.vgrow="ALWAYS"
+                           style="-fx-font-size: 13px; -fx-background-color: rgba(255,255,255,0.02);
+                                  -fx-border-color: rgba(255,255,255,0.06); -fx-border-radius: 10;">
+                    <columns>
+                        <TableColumn fx:id="colId"       text="ID"       prefWidth="50"  minWidth="50"/>
+                        <TableColumn fx:id="colUsername"  text="Username" prefWidth="160" minWidth="140"/>
+                        <TableColumn fx:id="colRole"      text="Role"     prefWidth="95"  minWidth="80"/>
+                        <TableColumn fx:id="colTier"      text="Tier"     prefWidth="140" minWidth="130"/>
+                        <TableColumn fx:id="colTokens"    text="Tokens"   prefWidth="95"  minWidth="80"/>
+                        <TableColumn fx:id="colDocs"      text="Docs"     prefWidth="75"  minWidth="60"/>
+                        <TableColumn fx:id="colChats"     text="Chats"    prefWidth="75"  minWidth="60"/>
+                        <TableColumn fx:id="colStatus"    text="Status"   prefWidth="140" minWidth="120"/>
+                    </columns>
+                </TableView>
+
+                <Label fx:id="lblTableStatus" text="Select a user to perform actions."
+                       styleClass="small-text"/>
+            </VBox>
+        </Tab>
+
+        <!-- ── Tab 2: Chat Sessions Monitor ── -->
+        <Tab text="💬  Chat Sessions">
+            <VBox spacing="10">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="All chat sessions across all users" styleClass="sub-header-text"
+                           HBox.hgrow="ALWAYS"/>
+                    <ComboBox fx:id="chatTypeFilter" promptText="All Types" styleClass="btn-sm"
+                              onAction="#handleChatTypeFilter"
+                              style="-fx-pref-width: 140;"/>
+                    <Button text="🗑 Delete Session" onAction="#handleDeleteSession"
+                            styleClass="btn-icon-red"
+                            style="-fx-padding: 6 14; -fx-border-color: rgba(239,68,68,0.3);
+                                   -fx-border-radius: 8; -fx-border-width: 1;
+                                   -fx-background-color: rgba(239,68,68,0.08);"/>
+                </HBox>
+
+                <TableView fx:id="chatTable" VBox.vgrow="ALWAYS"
+                           style="-fx-font-size: 13px; -fx-background-color: rgba(255,255,255,0.02);
+                                  -fx-border-color: rgba(255,255,255,0.06); -fx-border-radius: 10;">
+                    <columns>
+                        <TableColumn fx:id="colChatId"       text="ID"       prefWidth="50"  minWidth="40"/>
+                        <TableColumn fx:id="colChatTitle"    text="Title"    prefWidth="260" minWidth="160"/>
+                        <TableColumn fx:id="colChatOwner"    text="Owner"    prefWidth="150" minWidth="100"/>
+                        <TableColumn fx:id="colChatType"     text="Type"     prefWidth="110" minWidth="90"/>
+                        <TableColumn fx:id="colChatDocs"     text="Docs"     prefWidth="70"  minWidth="55"/>
+                        <TableColumn fx:id="colChatMembers"  text="Members"  prefWidth="85"  minWidth="70"/>
+                        <TableColumn fx:id="colChatMsgCount" text="Messages" prefWidth="95"  minWidth="80"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+
+        <!-- ── Tab 3: Document Library Monitor ── -->
+        <Tab text="📄  Documents">
+            <VBox spacing="10">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="All uploaded documents in the system" styleClass="sub-header-text"
+                           HBox.hgrow="ALWAYS"/>
+                    <Button text="🗑 Delete Doc" onAction="#handleDeleteDoc"
+                            styleClass="btn-icon-red"
+                            style="-fx-padding: 6 14; -fx-border-color: rgba(239,68,68,0.3);
+                                   -fx-border-radius: 8; -fx-border-width: 1;
+                                   -fx-background-color: rgba(239,68,68,0.08);"/>
+                </HBox>
+
+                <TableView fx:id="docTable" VBox.vgrow="ALWAYS"
+                           style="-fx-font-size: 13px; -fx-background-color: rgba(255,255,255,0.02);
+                                  -fx-border-color: rgba(255,255,255,0.06); -fx-border-radius: 10;">
+                    <columns>
+                        <TableColumn fx:id="colDocId"       text="ID"       prefWidth="50"  minWidth="40"/>
+                        <TableColumn fx:id="colDocFilename" text="Filename" prefWidth="320" minWidth="200"/>
+                        <TableColumn fx:id="colDocOwner"    text="Owner"    prefWidth="160" minWidth="120"/>
+                        <TableColumn fx:id="colDocUploaded" text="Uploaded" prefWidth="180" minWidth="140"/>
+                        <TableColumn fx:id="colDocStatus"   text="File OK?" prefWidth="110" minWidth="90"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </Tab>
+
+        <!-- ── Tab 4: System Log ── -->
+        <Tab text="🛠  System Log">
+            <VBox spacing="10">
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Label text="In-memory event log (since last launch)" styleClass="sub-header-text"
+                           HBox.hgrow="ALWAYS"/>
+                    <Button text="Clear Log" onAction="#handleClearLog" styleClass="btn-sm"
+                            style="-fx-padding: 6 12;"/>
+                </HBox>
+                <TextArea fx:id="systemLogArea" VBox.vgrow="ALWAYS"
+                          editable="false" wrapText="true"
+                          style="-fx-background-color: #ffffff;
+                                 -fx-text-fill: #1e293b;
+                                 -fx-font-family: 'Consolas', 'Courier New', monospace;
+                                 -fx-font-size: 12px;
+                                 -fx-border-color: rgba(255,255,255,0.08);
+                                 -fx-border-radius: 8;
+                                 -fx-background-radius: 8;"/>
+            </VBox>
+        </Tab>
+
+    </TabPane>
+
+</VBox>

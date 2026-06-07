@@ -1,0 +1,25 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+log/
+logs/
+
+# Eclipse
+.classpath
+.project
+.settings/
+.metadata/
+
+# Visual Studio Code
+.vscode/
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Mac
+.DS_Store
+
+# App specific
+uploads/
